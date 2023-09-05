@@ -7,6 +7,7 @@ install-pre-commit:
 	pre-commit install
 
 test:
+	pip install pytest
 	PYTHONPATH=. pytest
 
 style:

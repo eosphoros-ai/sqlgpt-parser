@@ -19,3 +19,8 @@ Query(query_body=QuerySpecification(select=Select(distinct=False, select_items=[
 >>> odps_parser.parse("select * from t")
 Query(query_body=QuerySpecification(select=Select(distinct=False, select_items=[SingleColumn(expression=QualifiedNameReference(name=QualifiedName.of("*")))]), from_=Table(name=QualifiedName.of("t"), for_update=False), order_by=[], limit=0, offset=0, for_update=False, nowait_or_wait=False), order_by=[], limit=0, offset=0)
 ```
+
+## Getting Started with SQL Parser Development
+
+English Document: [SQL Parser Development Guide](./docs/docs-en/SQL%20Parser%20Development%20Guide.md)
+中文文档：[SQL Parser 开发指南](./docs/docs-ch/SQL%20Parser%20开发指南.md)

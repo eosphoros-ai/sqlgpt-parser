@@ -12,6 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 
 from enum import Enum, unique
 
+
 @unique
 class IndexType(Enum):
     PRIMARY = '1.primary'
