@@ -47,9 +47,7 @@ class MyTestCase(unittest.TestCase):
         assert isinstance(result, Statement)
 
     def test_like(self):
-        result = oceanbase_parser.parse(
-            "SELECT name from blog where a like 'a' "
-        )
+        result = oceanbase_parser.parse("SELECT name from blog where a like 'a' ")
         query_body = result.query_body
         assert isinstance(query_body.where, LikePredicate)
 
@@ -266,25 +264,17 @@ SELECT          server_release_repo.server_release_repo_id,    server_release_re
         assert isinstance(result, Statement)
 
     def test_union_and_union_all(self):
-        result = mysql_parser.parse(
-            "select a from b union select a from b"
-        )
+        result = mysql_parser.parse("select a from b union select a from b")
         assert isinstance(result.query_body, Union)
         assert not result.query_body.all
-        result = oceanbase_parser.parse(
-            "select a from b union select a from b"
-        )
+        result = oceanbase_parser.parse("select a from b union select a from b")
         assert isinstance(result.query_body, Union)
         assert not result.query_body.all
 
-        result = oceanbase_parser.parse(
-            "select a from b union all select a from b"
-        )
+        result = oceanbase_parser.parse("select a from b union all select a from b")
         assert isinstance(result.query_body, Union)
         assert result.query_body.all
-        result = mysql_parser.parse(
-            "select a from b union all select a from b"
-        )
+        result = mysql_parser.parse("select a from b union all select a from b")
         assert isinstance(result.query_body, Union)
         assert result.query_body.all
 
@@ -392,7 +382,7 @@ SELECT id, gmt_create, gmt_modified, match_id, match_record_id , user_id, comple
         sql = """
             /* trace_id=0b7cad2e168016361004041132631,rpc_id=0.5c88b07f.9.1 */                      SELECT /*+ index(midas_record_value idx_tenant_time) */                 DISTINCT(trace_id)             FROM                 midas_record_value where tenant='fascore' and is_expired=0  order by gmt_modified asc limit 500        
             """
-        result = oceanbase_parser.parse(sql,debug=True)
+        result = oceanbase_parser.parse(sql, debug=True)
         assert isinstance(result, Statement)
 
     def test_quoted(self):

@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 
 from __future__ import print_function
 
-import types,threading
+import types, threading
 
 from src.sql_parser.tree.window import (
     FrameBound,
@@ -84,7 +84,7 @@ from src.sql_parser.tree.values import Values
 from src.sql_parser.tree.field_type import UNSPECIFIEDLENGTH, FieldType, SQLType
 
 from ply import yacc
-from src.sql_parser.mysql_parser.lexer import tokens,lexer
+from src.sql_parser.mysql_parser.lexer import tokens, lexer
 
 tokens = tokens
 

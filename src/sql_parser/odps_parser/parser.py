@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 
 from __future__ import print_function
 
-import types,threading
+import types, threading
 from src.sql_parser.tree.window import (
     FrameBound,
     FrameClause,
@@ -25,7 +25,7 @@ from src.sql_parser.tree.window import (
 from ply import yacc
 
 from src.sql_parser.tree.index_type import IndexType
-from src.sql_parser.odps_parser.lexer import tokens,lexer
+from src.sql_parser.odps_parser.lexer import tokens, lexer
 from src.sql_parser.tree.expression import (
     AggregateFunc,
     ArithmeticBinaryExpression,
