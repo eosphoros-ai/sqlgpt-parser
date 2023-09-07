@@ -16,6 +16,12 @@ class SQLType:
     DOUBLE = 10
     FLOAT = 11
     REAL = 12
+    INT = 13
+    FLOAT = 14
+    BIGINT = 15
+    TINYINT = 16
+    VARCHAR = 17
+    TIMESTAMP = 18
 
 
 class FieldType(Node):
@@ -25,6 +31,13 @@ class FieldType(Node):
         pos=None,
     ) -> None:
         super(FieldType, self).__init__(line, pos)
+        self.type_name = None
+        self.tp = None
+        self.length = None
+        self.decimal = None
+        self.flag = None
+        self.charset_and_collation = None
+        self.is_signed = None
 
     def set_tp(self, tp, type_name):
         self.tp = tp
@@ -59,14 +72,11 @@ class FieldType(Node):
             or self.tp is SQLType.TIME
             or self.tp is SQLType.DATETIME
         ):
-            if "length" in dir(FieldType) and self.length != UNSPECIFIEDLENGTH:
+            if self.length is not None and self.length != UNSPECIFIEDLENGTH:
                 result += f" ({self.length})"
 
         if self.tp is SQLType.CHAR:
-            if (
-                "charset_and_collation" in dir(FieldType)
-                and self.charset_and_collation != None
-            ):
+            if self.charset_and_collation is not None:
                 result += f" ({self.charset_and_collation})"
 
         if self.tp is SQLType.INTEGER:
@@ -74,13 +84,13 @@ class FieldType(Node):
 
         if self.tp is SQLType.FLOAT or self.tp is SQLType.DECIMAL:
             if (
-                "length" in dir(FieldType)
+                self.length is not None
                 and self.length != UNSPECIFIEDLENGTH
-                and "decimal" in dir(FieldType)
+                and self.decimal is not None
                 and self.decimal != UNSPECIFIEDLENGTH
             ):
                 result += f" ({self.length},{self.decimal})"
-            elif "length" in dir(FieldType) and self.length != UNSPECIFIEDLENGTH:
+            elif self.length is not None and self.length != UNSPECIFIEDLENGTH:
                 result += f" ({self.length})"
 
         return result

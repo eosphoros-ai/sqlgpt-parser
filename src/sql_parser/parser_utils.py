@@ -10,11 +10,11 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 """
 
-from src.parser.tree.grouping import GroupingSets, SimpleGroupBy
-from src.parser.tree.literal import StringLiteral
-from src.parser.tree.select_item import SingleColumn
-from src.parser.tree.visitor import DefaultTraversalVisitor
-from src.parser.tree.expression import (
+from src.sql_parser.tree.grouping import GroupingSets, SimpleGroupBy
+from src.sql_parser.tree.literal import StringLiteral
+from src.sql_parser.tree.select_item import SingleColumn
+from src.sql_parser.tree.visitor import DefaultTraversalVisitor
+from src.sql_parser.tree.expression import (
     FunctionCall,
     InListExpression,
     QualifiedNameReference,

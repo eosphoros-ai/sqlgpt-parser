@@ -140,3 +140,20 @@ class BooleanLiteral(Literal):
 
 BooleanLiteral.TRUE_LITERAL = BooleanLiteral(value="TRUE")
 BooleanLiteral.FALSE_LITERAL = BooleanLiteral(value="FALSE")
+
+
+class DefaultLiteral(Literal):
+    def __init__(self, line=None, pos=None, value=None):
+        super(DefaultLiteral, self).__init__(line, pos)
+        self.value = value
+
+    def accept(self, visitor, context):
+        return visitor.visit_default_literal(self, context)
+
+
+class ErrorLiteral(Literal):
+    def __int__(self, line=None, pos=None):
+        super(ErrorLiteral, self).__init__(line, pos)
+
+    def accept(self, visitor, context):
+        return visitor.visit_error_literal(self, context)
