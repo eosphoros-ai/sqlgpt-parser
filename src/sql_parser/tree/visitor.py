@@ -48,6 +48,12 @@ class AstVisitor(object):
     def visit_comparison_expression(self, node, context):
         return self.visit_expression(node, context)
 
+    def visit_compare_subquery_expr(self, node, context):
+        return self.visit_expression(node, context)
+
+    def visit_comparison_subquery(self, node, context):
+        return self.visit_expression(node, context)
+
     def visit_assignment_expression(self, node, context):
         return self.visit_expression(node, context)
 
@@ -273,10 +279,25 @@ class AstVisitor(object):
     def visit_cast(self, node, context):
         return self.visit_expression(node, context)
 
+    def visit_convert(self, node, context):
+        return self.visit_expression(node, context)
+
+    def visit_trim_func(self, node, context):
+        return self.visit_expression(node, context)
+
+    def visit_binary(self, node, context):
+        return self.visit_expression(node, context)
+
+    def visit_member_of(self, node, context):
+        return self.visit_expression(node, context)
+
+    def visit_group_concat(self, node, context):
+        return self.visit_expression(node, context)
+
     def visit_input_reference(self, node, context):
         return self.visit_expression(node, context)
 
-    def visit_window(self, node, context):
+    def visit_window_spec(self, node, context):
         return self.visit_node(node, context)
 
     def visit_window_frame(self, node, context):
@@ -379,6 +400,21 @@ class DefaultTraversalVisitor(AstVisitor):
     def visit_cast(self, node, context):
         return self.process(node.expression, context)
 
+    def visit_convert(self, node, context):
+        return self.visit_expression(node, context)
+
+    def visit_trim_func(self, node, context):
+        return self.visit_expression(node, context)
+
+    def visit_binary(self, node, context):
+        return self.visit_expression(node, context)
+
+    def visit_member_of(self, node, context):
+        return self.visit_expression(node, context)
+
+    def visit_group_concat(self, node, context):
+        return self.visit_expression(node, context)
+
     def visit_arithmetic_binary(self, node, context):
         self.process(node.left, context)
         self.process(node.right, context)
@@ -411,6 +447,11 @@ class DefaultTraversalVisitor(AstVisitor):
         return None
 
     def visit_comparison_expression(self, node, context):
+        self.process(node.left, context)
+        self.process(node.right, context)
+        return None
+
+    def visit_compare_subquery_expr(self, node, context):
         self.process(node.left, context)
         self.process(node.right, context)
         return None

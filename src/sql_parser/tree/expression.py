@@ -9,6 +9,7 @@ Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 """
+from enum import Enum
 
 from .node import Node
 
@@ -144,7 +145,7 @@ class CompareSubqueryExpr(ComparisonExpression):
         self.all_or_some_or_any = all_or_some_or_any
 
     def accept(self, visitor, context):
-        return visitor.visit_compare_subquery_expression(self, context)
+        return visitor.visit_compare_subquery_expr(self, context)
 
 
 class AssignmentExpression(Expression):
@@ -249,6 +250,9 @@ class TrimFunc(FunctionCall):
         self.remstr = remstr
         self.arg = arg
 
+    def accept(self, visitor, context):
+        return visitor.visit_trim_func(self, context)
+
 
 class Binary(FunctionCall):
     def __init__(self, line=None, pos=None, expr=None):
@@ -280,12 +284,13 @@ class Convert(FunctionCall):
 
 
 class MemberOf(FunctionCall):
-    def __init__(self, line=None, pos=None, args=None):
-        super(Convert, self).__init__(line, pos)
-        self.args = args
+    def __init__(self, line=None, pos=None, value=None, json_array=None):
+        super(FunctionCall, self).__init__(line, pos)
+        self.value = value
+        self.json_array = json_array
 
     def accept(self, visitor, context):
-        return visitor.visit_memberof(self, context)
+        return visitor.visit_member_of(self, context)
 
 
 class JsonTable(FunctionCall):
@@ -300,6 +305,38 @@ class JsonTable(FunctionCall):
 
     def accept(self, visitor, context):
         return visitor.visit_json_table(self, context)
+
+
+class JsonTableColumn(Expression):
+    class ColumnType(Enum):
+        FOR_ORDINALITY = 1
+        PATH = 2
+        EXISTS_PATH = 3
+        NESTED = 4
+
+    def __int__(
+        self,
+        line=None,
+        pos=None,
+        column_type=None,
+        name=None,
+        data_type=None,
+        path=None,
+        on_empty=None,
+        on_error=None,
+        column_list=None,
+    ):
+        super(JsonTableColumn, self).__init__(line, pos)
+        self.column_type = column_type
+        self.name = name
+        self.data_type = data_type
+        self.path = path
+        self.on_empty = on_empty
+        self.on_error = on_error
+        self.column_list = column_list
+
+    def accept(self, visitor, context):
+        return visitor.visit_json_table_column_list(self, context)
 
 
 class AggregateFunc(FunctionCall):

@@ -59,6 +59,7 @@ from src.sql_parser.tree.expression import (
     SubqueryExpression,
     TrimFunc,
     WhenClause,
+    JsonTableColumn,
 )
 from src.sql_parser.tree.grouping import SimpleGroupBy
 from src.sql_parser.tree.join_criteria import JoinOn, JoinUsing, NaturalJoin
@@ -70,6 +71,8 @@ from src.sql_parser.tree.literal import (
     NullLiteral,
     StringLiteral,
     TimeLiteral,
+    DefaultLiteral,
+    ErrorLiteral,
 )
 from src.sql_parser.tree.node import Node
 from src.sql_parser.tree.qualified_name import QualifiedName
@@ -85,7 +88,6 @@ from src.sql_parser.tree.values import Values
 from src.sql_parser.tree.field_type import UNSPECIFIEDLENGTH, FieldType, SQLType
 from src.sql_parser.tree.with_stmt import With, CommonTableExpr, WithHasQuery
 
-
 tokens = tokens
 
 # fmt: off
@@ -96,7 +98,7 @@ precedence = (
     ('left', 'AND', 'ANDAND'),
     ('right', 'NOT'),
     ('left', 'BETWEEN', 'CASE', 'WHEN', 'THEN', 'ELSE'),
-    ('left', 'EQ','NULL_SAFE_EQ','NE', 'LT', 'LE', 'GT', 'GE', 'IS', 'LIKE', 'RLIKE', 'REGEXP', 'IN'),
+    ('left', 'EQ', 'NULL_SAFE_EQ', 'NE', 'LT', 'LE', 'GT', 'GE', 'IS', 'LIKE', 'RLIKE', 'REGEXP', 'IN'),
     ('left', 'BIT_OR'),
     ('left', 'BIT_AND'),
     ('left', 'BIT_MOVE_LEFT', 'BIT_MOVE_RIGHT'),
@@ -188,6 +190,7 @@ def p_column_type(p):
                 | FLOAT column_end
                 | BIGINT column_end
                 | BIGINT LPAREN number RPAREN column_end
+                | TINYINT column_end
                 | TINYINT LPAREN number RPAREN column_end
                 | DATETIME column_end
                 | DATETIME LPAREN number RPAREN column_end
@@ -196,7 +199,37 @@ def p_column_type(p):
                 | TIMESTAMP column_end
                 | DECIMAL LPAREN number COMMA number RPAREN column_end
     """
-    p[0] = p[1].lower()
+    p[0] = FieldType()
+    if p.slice[1].type == 'INT':
+        p[0].set_tp(SQLType.INT, 'INT')
+        if len(p) == 6:
+            p[0].set_length(p[3])
+    elif p.slice[1].type == 'FLOAT':
+        p[0].set_tp(SQLType.FLOAT, 'FLOAT')
+    elif p.slice[1].type == 'BIGINT':
+        p[0].set_tp(SQLType.BIGINT, 'BIGINT')
+        if len(p) == 6:
+            p[0].set_length(p[3])
+    elif p.slice[1].type == 'TINYINT':
+        p[0].set_tp(SQLType.TINYINT, 'TINYINT')
+        if len(p) == 6:
+            p[0].set_length(p[3])
+    elif p.slice[1].type == 'DATETIME':
+        p[0].set_tp(SQLType.DATETIME, 'DATETIME')
+        if len(p) == 6:
+            p[0].set_length(p[3])
+    elif p.slice[1].type == 'VARCHAR':
+        p[0].set_tp(SQLType.VARCHAR, 'VARCHAR')
+        p[0].set_length(p[3])
+    elif p.slice[1].type == 'CHAR':
+        p[0].set_tp(SQLType.CHAR, 'CHAR')
+        p[0].set_length(p[3])
+    elif p.slice[1].type == 'TIMESTAMP':
+        p[0].set_tp(SQLType.TIMESTAMP, 'TIMESTAMP')
+    elif p.slice[1].type == 'DECIMAL':
+        p[0].set_tp(SQLType.DECIMAL, 'DECIMAL')
+        p[0].set_length(p[3])
+        p[0].set_decimal(p[5])
 
 
 def p_column_end(p):
@@ -291,6 +324,7 @@ def p_statement(p):
     | insert"""
     p[0] = p[1]
 
+
 def p_insert(p):
     r"""insert : INSERT ignore INTO table_reference VALUES insert_values
     | INSERT ignore INTO table_reference LPAREN index_column_list RPAREN VALUES insert_values
@@ -302,25 +336,27 @@ def p_insert(p):
 def p_insert_values(p):
     r"""insert_values : LPAREN value_list RPAREN
     | insert_values COMMA LPAREN value_list RPAREN"""
-    if len(p)==4:
-        p[0]=[p[2]]
+    if len(p) == 4:
+        p[0] = [p[2]]
     else:
         p[1].append(p[4])
-        p[0]=p[1]
+        p[0] = p[1]
+
 
 def p_value_list(p):
     r"""value_list : expr_or_default
     | value_list COMMA expr_or_default"""
-    if len(p)==2:
-        p[0]=[p[1]]
+    if len(p) == 2:
+        p[0] = [p[1]]
     else:
         p[1].append(p[3])
-        p[0]=p[1]
+        p[0] = p[1]
+
 
 def p_expr_or_defalut(p):
     r"""expr_or_defalut : expression
     | DEFAULT """
-    p[0]=p[1]
+    p[0] = p[1]
 
 
 def p_ignore(p):
@@ -338,43 +374,48 @@ def p_delete(p):
     | DELETE FROM table_name_list USING relations where_opt order_by_opt limit_opt
     | DELETE FROM table_name_list USING relations partition where_opt order_by_opt limit_opt
     """
-    length=len(p)
-    p_limit = p[length-1]
+    length = len(p)
+    p_limit = p[length - 1]
     if p_limit is not None:
-        offset,limit = int(p_limit[0]),int(p_limit[1])  
+        offset, limit = int(p_limit[0]), int(p_limit[1])
     else:
-        offset,limit=0,0
-    if p.slice[3].type=="relations":
-        tables,table_refs=p[3],None
-    elif p.slice[2].type=="table_name_list":
-        tables,table_refs=p[4],p[2]
+        offset, limit = 0, 0
+    if p.slice[3].type == "relations":
+        tables, table_refs = p[3], None
+    elif p.slice[2].type == "table_name_list":
+        tables, table_refs = p[4], p[2]
     else:
-        tables,table_refs=p[3],p[5]
-    p[0] = Delete(table=tables,table_refs=table_refs,where=p[length-3], order_by=p[length-2], limit=limit, offset=offset)
+        tables, table_refs = p[3], p[5]
+    p[0] = Delete(table=tables, table_refs=table_refs, where=p[length - 3], order_by=p[length - 2], limit=limit,
+                  offset=offset)
+
 
 def p_table_name_list(p):
     r"""table_name_list :  table_name_list COMMA table_name_opt_wild
     |  table_name_opt_wild"""
-    if len(p)==4:
+    if len(p) == 4:
         p[1].append(p[3])
-        p[0]=p[1]
+        p[0] = p[1]
     else:
-        p[0]=[p[1]]
+        p[0] = [p[1]]
+
 
 def p_table_name_opt_wild(p):
     r"""table_name_opt_wild : identifier
     | identifier PERIOD identifier
     | identifier PERIOD ASTERISK
     | identifier PERIOD identifier PERIOD ASTERISK"""
-    if len(p)==6 or (len(p)==4 and p.slice[3]=='identifier'):
-        p[0]=QualifiedName(parts=[p[2],p[3]])
+    if len(p) == 6 or (len(p) == 4 and p.slice[3] == 'identifier'):
+        p[0] = QualifiedName(parts=[p[2], p[3]])
     else:
-        p[0]=QualifiedName(parts=[p[1]])
+        p[0] = QualifiedName(parts=[p[1]])
+
 
 def p_opt_asterisk(p):
     r"""opt_asterisk : PERIOD ASTERISK
     | empty"""
     pass
+
 
 def p_update(p):
     r"""update : UPDATE relations SET assignment_list where_opt order_by_opt limit_opt"""
@@ -669,6 +710,7 @@ def p_limit_opt(p):
     | empty"""
     p[0] = p[1] if p[1] else None
 
+
 def p_limit_stmt(p):
     r"""limit_stmt : LIMIT parameterization
     | LIMIT parameterization COMMA parameterization
@@ -681,7 +723,7 @@ def p_limit_stmt(p):
         else:
             p[0] = (p[2], p[4]) if p[3] == ',' else (p[4], p[2])
     else:
-        p[0]=(0,p[3])
+        p[0] = (0, p[3])
 
 
 def p_parameterization(p):
@@ -689,24 +731,28 @@ def p_parameterization(p):
     | QM
     """
     if p.slice[1].type == "number":
-        p[0]=p[1].value
+        p[0] = p[1].value
     else:
         p[0] = p[1]
+
 
 def p_first_or_next(p):
     r"""first_or_next : FIRST
     | NEXT"""
-    p[0]=p[1]
+    p[0] = p[1]
+
 
 def p_fetch_first_opt(p):
     r"""fetch_first_opt : parameterization
     | empty"""
-    p[0]=p[1] if p[1] else 1
+    p[0] = p[1] if p[1] else 1
+
 
 def p_row_or_rows(p):
     r"""row_or_rows : ROW
     | ROWS"""
-    p[0]=p[1]
+    p[0] = p[1]
+
 
 def p_number(p):
     r"""number : NUMBER"""
@@ -731,7 +777,7 @@ def p_set_operation_expressions(p):
 
 
 def _set_operation(line, pos, left, right, oper, distinctOrAll):
-    distinct = distinctOrAll is not None and distinctOrAll.upper() in {"DISTINCT","UNIQUE","DISTINCTROW"}
+    distinct = distinctOrAll is not None and distinctOrAll.upper() in {"DISTINCT", "UNIQUE", "DISTINCTROW"}
     all = distinctOrAll is not None and distinctOrAll.upper() == "ALL"
     oper = oper.upper()
     if oper == "UNION":
@@ -875,25 +921,29 @@ def p_having_opt(p):
     | empty"""
     p[0] = p[2] if p[1] else None
 
+
 def p_set_quantifier_opt(p):
     r"""set_quantifier_opt : distinct_opt 
     | empty
     """
-    p[0]=p[1]
+    p[0] = p[1]
+
 
 def p_select_stmt_opts(p):
     r"""select_stmt_opts : select_stmt_opt_list
     | empty"""
-    p[0]=p[1]
+    p[0] = p[1]
+
 
 def p_select_stmt_opt_list(p):
     r"""select_stmt_opt_list : select_stmt_opt_list select_stmt_opt
     | select_stmt_opt"""
-    if len(p)==3:
+    if len(p) == 3:
         p[1].append(p[2])
-        p[0]=p[1]
+        p[0] = p[1]
     else:
-        p[0]=[p[1]]
+        p[0] = [p[1]]
+
 
 def p_select_stmt_opt(p):
     r"""select_stmt_opt : distinct_opt
@@ -904,11 +954,13 @@ def p_select_stmt_opt(p):
     | SQL_NO_CACHE
     | SQL_CALC_FOUND_ROWS
     | STRAIGHT_JOIN"""
-    p[0]=p[1]
+    p[0] = p[1]
+
 
 def p_priority(p):
     r"""priority : HIGH_PRIORITY"""
-    p[0]=p[1]
+    p[0] = p[1]
+
 
 def p_distinct_opt(p):
     r"""distinct_opt : ALL
@@ -916,6 +968,7 @@ def p_distinct_opt(p):
     | UNIQUE
     | DISTINCTROW"""
     p[0] = p[1]
+
 
 def p_select_items(p):
     r"""select_items : select_item
@@ -926,6 +979,7 @@ def p_select_items(p):
 def p_select_item(p):
     r"""select_item : derived_column"""
     p[0] = p[1]
+
 
 def p_derived_column(p):
     r"""derived_column : expression alias_opt
@@ -951,7 +1005,7 @@ def p_table_expression_opt(p):
     | FROM relations where_opt group_by_opt having_opt
     | empty"""
     if len(p) == 7:
-        p[0] = Node(p.lineno(1),p.lexpos(1),from_=p[2],partition=p[3],where=p[4],group_by=p[5],having=p[6])
+        p[0] = Node(p.lineno(1), p.lexpos(1), from_=p[2], partition=p[3], where=p[4], group_by=p[5], having=p[6])
     elif len(p) == 6:
         p[0] = Node(p.lineno(1), p.lexpos(1), from_=p[2], where=p[3], group_by=p[4], having=p[5])
     else:
@@ -1077,6 +1131,7 @@ def p_aliased_relation(p):
     else:
         p[0] = rel
 
+
 def p_index_hint_opt(p):
     r"""index_hint_opt : index_hint_list
     | empty"""
@@ -1122,10 +1177,12 @@ def p_index_or_key(p):
     | KEY"""
     pass
 
+
 def p_index_name(p):
     r"""index_name : PRIMARY
     | identifiers"""
     pass
+
 
 def p_derived_table(p):
     r"""derived_table : subquery alias_opt"""
@@ -1184,7 +1241,7 @@ def p_search_condition(p):
 
 def p_boolean_term(p):
     r"""boolean_term : NOT search_condition
-    | MATCH LPAREN select_items RPAREN AGAINST LPAREN value_expression full_text_search_modifier_opt RPAREN
+    | MATCH LPAREN qualified_name_list RPAREN AGAINST LPAREN value_expression full_text_search_modifier_opt RPAREN
     | define_variable ASSIGNMENTEQ search_condition
     | boolean_factor"""
     if len(p) == 2:
@@ -1197,7 +1254,7 @@ def p_boolean_term(p):
         p[0] = NotExpression(p.lineno(1), p.lexpos(1), value=p[2])
     elif p.slice[1].type == "MATCH":
         p[0] = MatchAgainstExpression(
-            p.lineno(1), p.lexpos(1), column_list=p[2], expr=p[7], search_modifier=p[8]
+            p.lineno(1), p.lexpos(1), column_list=p[3], expr=p[7], search_modifier=p[8]
         )
 
 
@@ -1270,13 +1327,15 @@ def p_sounds_predicate(p):
     r"""sounds_predicate : value_expression SOUNDS LIKE factor"""
     p[0] = SoundLike(p.lineno(1), p.lexpos(1), arguments=[p[1], p[2]])
 
+
 def p_in_predicate(p):
     r"""in_predicate : value_expression IN in_value
     | value_expression NOT IN in_value"""
-    if len(p)==5:
+    if len(p) == 5:
         p[0] = InPredicate(p.lineno(1), p.lexpos(1), is_not=True, value=p[1], value_list=p[4])
     else:
         p[0] = InPredicate(p.lineno(1), p.lexpos(1), is_not=False, value=p[1], value_list=p[3])
+
 
 def p_like_predicate(p):
     r"""like_predicate : value_expression like_opt value_expression escape_opt"""
@@ -1300,9 +1359,9 @@ def p_is_predicate(p):
     p[0] = IsPredicate(p.lineno(1), p.lexpos(1), is_not=p[2], value=p[1], kwd=p[3])
 
 
-def p_memeber_predicate(p):
+def p_member_predicate(p):
     r"""member_predicate : value_expression MEMBER OF LPAREN factor RPAREN"""
-    p[0] = MemberOf(p.lineno(1), p.lexpos(1), args=[p[1], p[5]])
+    p[0] = MemberOf(p.lineno(1), p.lexpos(1), value=p[1], json_array=p[5])
 
 
 def p_between_opt(p):
@@ -1327,7 +1386,6 @@ def p_string_lit(p):
         p[0] = StringLiteral(p.lineno(1), p.lexpos(1), value=p[1][1:-1])
     else:
         p[0] = StringLiteral(p.lineno(1), p.lexpos(1), value=p[1].value + p[2][1:-1])
-
 
 
 def p_in_value(p):
@@ -1441,6 +1499,7 @@ def p_base_primary_expression(p):
     else:
         p[0] = p[1]
 
+
 def p_define_variable(p):
     r"""define_variable : SINGLE_AT_IDENTIFIER
     | SINGLE_AT_IDENTIFIER PERIOD variables
@@ -1448,20 +1507,22 @@ def p_define_variable(p):
     | DOUBLE_AT_IDENTIFIER PERIOD variables
     """
     if len(p) == 4:
-        parts=[p[1]]
+        parts = [p[1]]
         parts.extend(p[3].parts)
-        p[0]=QualifiedName(parts=parts)
+        p[0] = QualifiedName(parts=parts)
     else:
         p[0] = QualifiedName(parts=[p[1]])
+
 
 def p_variables(p):
     r"""variables : variables PERIOD identifier
     | identifier"""
     if len(p) == 4:
         p[1].parts.append(p[3])
-        p[0]=p[1]
+        p[0] = p[1]
     else:
         p[0] = QualifiedName(parts=[p[1]])
+
 
 def p_oceanbase_func_call(p):
     r"""oceanbase_func_call : HOST_IP LPAREN RPAREN
@@ -1473,18 +1534,19 @@ def p_oceanbase_func_call(p):
     | OB_VERSION LPAREN RPAREN
     | oceanbase_cast_func_call 
     """
-    if len(p)==2:
-        p[0]=p[1]
+    if len(p) == 2:
+        p[0] = p[1]
     else:
-        arguments,call_list,length= [],[],len(p)
+        arguments, call_list, length = [], [], len(p)
         if p.slice[length - 2].type == "call_list":
-            call_list=p[length-2]
+            call_list = p[length - 2]
             length = length - 2
         if length > 4:
             for i in range(3, length, 2):
                 arguments.append(p[i])
             arguments.extend(call_list)
         p[0] = FunctionCall(p.lineno(1), p.lexpos(1), name=p[1], arguments=arguments)
+
 
 def p_oceanbase_cast_func_call(p):
     r"""oceanbase_cast_func_call : ASCIISTR LPAREN expression RPAREN
@@ -1534,16 +1596,18 @@ def p_oceanbase_cast_func_call(p):
     | UNISTR LPAREN expression RPAREN
     """
     if len(p) == 9:
-        p[0] = FunctionCall(p.lineno(1),p.lexpos(1),name=p[1],distinct=False,arguments=[p[3], p[5], p[7]])
-    elif len(p)==7:
+        p[0] = FunctionCall(p.lineno(1), p.lexpos(1), name=p[1], distinct=False, arguments=[p[3], p[5], p[7]])
+    elif len(p) == 7:
         p[0] = FunctionCall(p.lineno(1), p.lexpos(1), name=p[1], distinct=False, arguments=[p[3], p[5]])
     else:
         p[0] = FunctionCall(p.lineno(1), p.lexpos(1), name=p[1], distinct=False, arguments=[p[3]])
+
 
 def p_odps_func_call(p):
     r"""odps_func_call : MAX_PT LPAREN expression RPAREN
     """
     p[0] = FunctionCall(p.lineno(1), p.lexpos(1), name=p[1], arguments=[p[3]])
+
 
 def p_exists_func_call(p):
     r"""exists_func_call : EXISTS subquery"""
@@ -2047,7 +2111,7 @@ def p_add_or_sub_date_func(p):
     | DATE_ADD LPAREN expression COMMA expression RPAREN
     | DATE_SUB LPAREN expression COMMA expression RPAREN
     """
-    p[0] = FunctionCall(p.lineno(1), p.lexpos(1), name=p[1], arguments=[p[3],p[5]])
+    p[0] = FunctionCall(p.lineno(1), p.lexpos(1), name=p[1], arguments=[p[3], p[5]])
 
 
 def p_extract_func(p):
@@ -2095,9 +2159,11 @@ def p_date_two_para_func(p):
     | TIME_FORMAT LPAREN expression COMMA expression RPAREN"""
     p[0] = FunctionCall(p.lineno(1), p.lexpos(1), name=p[1], arguments=[p[3], p[5]])
 
+
 def p_date_three_para_func(p):
     r"""date_three_para_func : CONVERT_TZ LPAREN expression COMMA expression COMMA expression RPAREN"""
-    p[0] = FunctionCall(p.lineno(1), p.lexpos(1), name=p[1], arguments=[p[3], p[5],p[7]])
+    p[0] = FunctionCall(p.lineno(1), p.lexpos(1), name=p[1], arguments=[p[3], p[5], p[7]])
+
 
 def p_string_operator_func_call(p):
     r"""string_operator_func_call : ASCII LPAREN expression RPAREN
@@ -2159,9 +2225,9 @@ def p_string_operator_func_call(p):
         p[0] = p[1]
     else:
         arguments = []
-        call_list=[]
+        call_list = []
         if p.slice[length - 2].type == "call_list":
-            call_list=p[length-2]
+            call_list = p[length - 2]
             length = length - 2
         if length > 4:
             for i in range(3, length, 2):
@@ -2250,7 +2316,7 @@ def p_string_comparsion_func_call(p):
     | REGEXP_SUBSTR LPAREN expression COMMA expression COMMA expression COMMA expression COMMA expression RPAREN
     | REGEXP_SUBSTR LPAREN expression COMMA expression COMMA expression COMMA expression COMMA expression COMMA expression RPAREN
     """
-    arguments,length=[],len(p)
+    arguments, length = [], len(p)
     for i in range(3, length, 2):
         arguments.append(p[i])
     p[0] = FunctionCall(p.lineno(1), p.lexpos(1), name=p[1], arguments=arguments)
@@ -2393,9 +2459,9 @@ def p_search_json_func_call(p):
     | JSON_VALUE LPAREN expression COMMA expression RPAREN
     """
     length = len(p)
-    arguments, call_list = [],[]
+    arguments, call_list = [], []
     if p.slice[length - 2].type == "call_list":
-        call_list=p[length - 2]
+        call_list = p[length - 2]
         length -= 2
     for i in range(3, length, 2):
         arguments.append(p[i])
@@ -2426,9 +2492,9 @@ def p_modify_json_func_call(p):
     """
     length = len(p)
     arguments = []
-    call_list=[]
+    call_list = []
     if p.slice[length - 2].type == "call_list":
-        call_list=p[length - 2]
+        call_list = p[length - 2]
         length -= 2
     for i in range(3, length, 2):
         arguments.append(p[i])
@@ -2453,6 +2519,74 @@ def p_json_table_func_call(p):
     p[0] = JsonTable(
         p.lineno(1), p.lexpos(1), expr=p[3], path=p[5], column_list=p[8], alias=p[10]
     )
+
+
+def p_json_table_column_list(p):
+    r"""json_table_column_list : json_table_column
+    | json_table_column_list COMMA json_table_column"""
+    if len(p) == 2:
+        p[0] = [p[1]]
+    else:
+        p[1].append(p[3])
+        p[0] = p[1]
+
+
+def p_json_table_column(p):
+    r"""json_table_column : identifier FOR ORDINALITY
+    | identifier column_type PATH string_lit
+    | identifier column_type PATH string_lit on_empty_or_error_opt
+    | identifier column_type EXISTS PATH string_lit
+    | NESTED string_lit COLUMNS LPAREN json_table_column_list RPAREN
+    | NESTED PATH string_lit COLUMNS LPAREN json_table_column_list RPAREN"""
+    if len(p) == 4 and p.slice[3].type == "ORDINALITY":
+        p[0] = JsonTableColumn(p.lineno(1), p.lexpos(1),
+                               column_type=JsonTableColumn.ColumnType.FOR_ORDINALITY,
+                               name=p[1])
+    elif len(p) == 4 and p.slice[2].type == 'PATH':
+        p[0] = JsonTableColumn(p.lineno(1), p.lexpos(1),
+                               column_type=JsonTableColumn.ColumnType.PATH,
+                               name=p[1], data_type=p[2], path=p[4])
+    elif len(p) == 5 and p.slice[2].type == 'PATH':
+        p[0] = JsonTableColumn(p.lineno(1), p.lexpos(1),
+                               column_type=JsonTableColumn.ColumnType.PATH,
+                               name=p[1], data_type=p[2], path=p[4], on_error=p[5]["ERROR"], on_empty=p[5]["EMPTY"])
+    elif p.slice[2].type == 'EXISTS':
+        p[0] = JsonTableColumn(p.lineno(1), p.lexpos(1),
+                               column_type=JsonTableColumn.ColumnType.EXISTS_PATH,
+                               name=p[1], data_type=p[2], path=p[5])
+    elif p.slice[1].type == 'NESTED':
+        if len(p) == 7:
+            p[0] = JsonTableColumn(p.lineno(1), p.lexpos(1),
+                                   column_type=JsonTableColumn.ColumnType.NESTED,
+                                   path=p[2], column_list=p[5])
+        else:
+            p[0] = JsonTableColumn(p.lineno(1), p.lexpos(1),
+                                   column_type=JsonTableColumn.ColumnType.NESTED,
+                                   path=p[3], column_list=p[6])
+
+def p_on_empty_or_error_opt(p):
+    r"""on_empty_or_error_opt : json_table_value_opt ON EMPTY
+    | json_table_value_opt ON ERROR
+    | json_table_value_opt ON EMPTY json_table_value_opt ON ERROR"""
+    if len(p) == 4:
+        if p.slice[3] == 'EMPTY':
+            p[0] = {"EMPTY": p[1], "ERROR": None}
+        elif p.slice[3] == 'ERROR':
+            p[0] = {"EMPTY": None, "ERROR": p[1]}
+    else:
+        p[0] = {"EMPTY": p[1], "ERROR": p[4]}
+
+
+def p_json_table_value_opt(p):
+    r"""json_table_value_opt : NULL
+    | DEFAULT string_lit
+    | ERROR"""
+    if p.slice[1] == 'NULL':
+        p[0] = NullLiteral(p.lineno(1), p.lexpos(1))
+    elif p.slice[1] == 'DEFAULT':
+        p[0] = DefaultLiteral(p.lineno(1), p.lexpos(1), p[2])
+    else:
+        p[0] = ErrorLiteral(p.lineno(1), p.lexpos(1))
 
 
 def p_json_schema_func_call(p):
@@ -2614,12 +2748,11 @@ def p_format_selector(p):
     p[0] = p[1]
 
 
-
 def p_separator_opt(p):
     r"""separator_opt : SEPARATOR expression
     | empty
     """
-    p[0] = p[1]
+    p[0] = p[2] if len(p) == 3 else p[1]
 
 
 def p_case_specification(p):
@@ -2652,7 +2785,7 @@ def p_cast_func_call(p):
     | CONVERT LPAREN expression COMMA cast_field RPAREN
     | CONVERT LPAREN expression USING charset_name RPAREN"""
     if p.slice[1].type == 'CAST':
-        if len(p) == 6:
+        if len(p) == 7:
             p[0] = Cast(
                 p.lineno(1), p.lexpos(1), expression=p[3], data_type=p[5], array=False
             )
@@ -2761,14 +2894,15 @@ def p_cast_field(p):
         field.set_decimal(p[2]["decimal"])
     elif p.slice[1].type == "REAL":
         field.set_tp(SQLType.REAL, "REAL")
+    p[0] = field
 
 
 def p_field_len_opt(p):
     r"""field_len_opt : LPAREN NUMBER RPAREN
     | empty"""
     if len(p) == 4:
-        field_len=LongLiteral(p.lineno(1), p.lexpos(1),p[2])
-        p[0] =field_len.value& 0xFFFFFFFF  # convert to unsigned int
+        field_len = LongLiteral(p.lineno(1), p.lexpos(1), p[2])
+        p[0] = field_len.value & 0xFFFFFFFF  # convert to unsigned int
     p[0] = UNSPECIFIEDLENGTH
 
 
@@ -2788,7 +2922,7 @@ def p_field_parameter(p):
     r"""field_parameter : number
     | base_data_type"""
     if p.slice[1].type == "number":
-        p[0]=p[1].value
+        p[0] = p[1].value
     else:
         p[0] = p[1]
 
@@ -2840,7 +2974,14 @@ def p_boolean_value(p):
     | FALSE"""
     p[0] = BooleanLiteral(p.lineno(1), p.lexpos(1), value=p[1])
 
-
+def p_qualified_name_list(p):
+    r"""qualified_name_list : qualified_name_list COMMA qualified_name
+    | qualified_name"""
+    if len(p) == 2:
+        p[0] = [p[1]]
+    else:
+        p[1].append(p[3])
+        p[0] = p[1]
 def p_qualified_name(p):
     r"""qualified_name : identifier
     | identifier PERIOD identifier
@@ -3051,6 +3192,7 @@ def p_non_reserved(p):
     | ENGINE_
     | ENTITY
     | ENUM
+    | ERROR
     | ERRORS
     | ERROR_CODE
     | ERROR_P
@@ -3340,6 +3482,7 @@ def p_non_reserved(p):
     | NCHAR
     | NDB
     | NDBCLUSTER
+    | NESTED
     | NEW
     | NEXT
     | NO
@@ -3373,6 +3516,7 @@ def p_non_reserved(p):
     | OR
     | ORA_DECODE
     | ORD
+    | ORDINALITY
     | ORIG_DEFAULT
     | OUTLINE
     | OVER
@@ -3389,6 +3533,7 @@ def p_non_reserved(p):
     | PARTITION_ID
     | PASSWORD
     | PAUSE
+    | PATH
     | PCTFREE
     | PERIOD_ADD
     | PERIOD_DIFF
@@ -3833,12 +3978,14 @@ def p_error(p):
         raise err
     raise SyntaxError("The current version does not support this SQL")
 
+
 parser = None
+
 
 def parse(sql=None, debug=False, tracking=False, tokenfunc=None):
     global parser
-    if parser==None:
+    if parser == None:
         with threading.Lock():
-            if parser==None:
-                parser=yacc.yacc(tabmodule="parser_table", start="command", debugfile="parser.out",optimize=True)
-    return parser.parse(input=sql,lexer=lexer,debug=debug,tracking=tracking,tokenfunc=tokenfunc)
+            if parser == None:
+                parser = yacc.yacc(tabmodule="parser_table", start="command", debugfile="parser.out", optimize=True)
+    return parser.parse(input=sql, lexer=lexer, debug=debug, tracking=tracking, tokenfunc=tokenfunc)
