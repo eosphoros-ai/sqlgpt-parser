@@ -9,13 +9,13 @@ Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 """
-from src.sql_parser.tree import JsonTableColumn
-from src.sql_parser.tree.explain import ExplainFormat, ExplainType
-from src.sql_parser.tree.grouping import SimpleGroupBy
-from src.sql_parser.tree.join_criteria import JoinOn, JoinUsing, NaturalJoin
-from src.sql_parser.tree.table import Table, TableSubquery
-from src.sql_parser.tree.visitor import AstVisitor
-from src.sql_parser.parser_utils import FIELD_REFERENCE_PREFIX
+from sqlgpt_parser.sql_parser.tree import JsonTableColumn
+from sqlgpt_parser.sql_parser.tree.explain import ExplainFormat, ExplainType
+from sqlgpt_parser.sql_parser.tree.grouping import SimpleGroupBy
+from sqlgpt_parser.sql_parser.tree.join_criteria import JoinOn, JoinUsing, NaturalJoin
+from sqlgpt_parser.sql_parser.tree.table import Table, TableSubquery
+from sqlgpt_parser.sql_parser.tree.visitor import AstVisitor
+from sqlgpt_parser.sql_parser.parser_utils import FIELD_REFERENCE_PREFIX
 
 
 class Formatter(AstVisitor):

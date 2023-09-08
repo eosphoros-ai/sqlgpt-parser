@@ -2,7 +2,7 @@
 
 The `parser` module is the foundational module of `sqlgpt-parser`. It parses SQL statements according to predefined SQL grammar rules, converting them from text into an abstract syntax tree (`AST`).
 
-The `parser` module in `sqlgpt-parser` is written using [PLY](https://github.com/dabeaz/ply). PLY is a Python tool for building lexical and parsing analyzers. It can analyze input text based on specified patterns and automatically compile the lexical and grammar rule files in the [sql-parser](../../src/sql_parser/) folder of the project before the program runs, generating executable code.
+The `parser` module in `sqlgpt-parser` is written using [PLY](https://github.com/dabeaz/ply). PLY is a Python tool for building lexical and parsing analyzers. It can analyze input text based on specified patterns and automatically compile the lexical and grammar rule files in the [sql-parser](../../sqlgpt_parser/sql_parser/) folder of the project before the program runs, generating executable code.
 
 ## Lexical Analysis and Syntax Analysis
 
@@ -158,7 +158,7 @@ PLY uses the notation `p[position]` to access the stack, where `p[0]` correspond
 
 ## Implementation of the `parser` for `sqlgpt-parser`
 
-There are a total of three SQL parsers in `sqlgpt-parser`, located in the [mysql_parser](../../src/sql_parser/mysql_parser), [oceanbase_parser](../../src/sql_parser/oceanbase_parser), and [odps_parser](../../src/sql_parser/odps_parser) folders. Each of these folders contains three files: `lexer.py`, `reserved.py`, and `parser.py`.
+There are a total of three SQL parsers in `sqlgpt-parser`, located in the [mysql_parser](../../sqlgpt_parser/sql_parser/mysql_parser), [oceanbase_parser](../../sqlgpt_parser/sql_parser/oceanbase_parser), and [odps_parser](../../sqlgpt_parser/sql_parser/odps_parser) folders. Each of these folders contains three files: `lexer.py`, `reserved.py`, and `parser.py`.
 
 The `lexer.py` and `reserved.py` files are both used for lexical analysis. In `reserved.py`, SQL keywords are defined and stored in two variables: `reserved` and `nonreserved`. The `reserved` variable contains all the keywords that cannot be used as column names, table names, or aliases in SQL. On the other hand, `nonreserved` contains keywords that can be used as column names, table names, or aliases.
 
@@ -245,7 +245,8 @@ The comment in `p_delete` corresponds to the syntax rule for the `DELETE` statem
 Once the grammar rules are written, they can be used to parse SQL statements. Taking `mysql_parser` as an example, you can use this grammar rule for parsing SQL statements.
 
 ```python
-from src.sql_parser.mysql_parser import parser as mysql_parser
+from sqlgpt_parser.sql_parser.mysql_parser import parser as mysql_parser
+
 sql = "DELETE FROM t WHERE a=1"
 result = mysql_parser.parse(sql)
 ```

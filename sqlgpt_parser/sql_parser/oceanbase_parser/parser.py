@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 from __future__ import print_function
 
 import types, threading
-from src.sql_parser.tree.window import (
+from sqlgpt_parser.sql_parser.tree.window import (
     FrameBound,
     FrameClause,
     FrameExpr,
@@ -23,10 +23,9 @@ from src.sql_parser.tree.window import (
 )
 
 from ply import yacc
-
-from src.sql_parser.tree.index_type import IndexType
-from src.sql_parser.odps_parser.lexer import tokens, lexer
-from src.sql_parser.tree.expression import (
+from sqlgpt_parser.sql_parser.tree.index_type import IndexType
+from sqlgpt_parser.sql_parser.oceanbase_parser.lexer import tokens, lexer
+from sqlgpt_parser.sql_parser.tree.expression import (
     AggregateFunc,
     ArithmeticBinaryExpression,
     ArithmeticUnaryExpression,
@@ -61,9 +60,9 @@ from src.sql_parser.tree.expression import (
     WhenClause,
     JsonTableColumn,
 )
-from src.sql_parser.tree.grouping import SimpleGroupBy
-from src.sql_parser.tree.join_criteria import JoinOn, JoinUsing, NaturalJoin
-from src.sql_parser.tree.literal import (
+from sqlgpt_parser.sql_parser.tree.grouping import SimpleGroupBy
+from sqlgpt_parser.sql_parser.tree.join_criteria import JoinOn, JoinUsing, NaturalJoin
+from sqlgpt_parser.sql_parser.tree.literal import (
     BooleanLiteral,
     DateLiteral,
     DoubleLiteral,
@@ -74,19 +73,19 @@ from src.sql_parser.tree.literal import (
     DefaultLiteral,
     ErrorLiteral,
 )
-from src.sql_parser.tree.node import Node
-from src.sql_parser.tree.qualified_name import QualifiedName
-from src.sql_parser.tree.query_specification import QuerySpecification
-from src.sql_parser.tree.relation import AliasedRelation, Join
-from src.sql_parser.tree.select import Select
-from src.sql_parser.tree.select_item import Partition, SingleColumn
-from src.sql_parser.tree.set_operation import Except, Intersect, Union
-from src.sql_parser.tree.sort_item import ByItem, PartitionByClause, SortItem
-from src.sql_parser.tree.statement import Delete, Insert, Query, Update
-from src.sql_parser.tree.table import Table
-from src.sql_parser.tree.values import Values
-from src.sql_parser.tree.field_type import UNSPECIFIEDLENGTH, FieldType, SQLType
-from src.sql_parser.tree.with_stmt import With, CommonTableExpr, WithHasQuery
+from sqlgpt_parser.sql_parser.tree.node import Node
+from sqlgpt_parser.sql_parser.tree.qualified_name import QualifiedName
+from sqlgpt_parser.sql_parser.tree.query_specification import QuerySpecification
+from sqlgpt_parser.sql_parser.tree.relation import AliasedRelation, Join
+from sqlgpt_parser.sql_parser.tree.select import Select
+from sqlgpt_parser.sql_parser.tree.select_item import Partition, SingleColumn
+from sqlgpt_parser.sql_parser.tree.set_operation import Except, Intersect, Union
+from sqlgpt_parser.sql_parser.tree.sort_item import ByItem, PartitionByClause, SortItem
+from sqlgpt_parser.sql_parser.tree.statement import Delete, Insert, Query, Update
+from sqlgpt_parser.sql_parser.tree.table import Table
+from sqlgpt_parser.sql_parser.tree.values import Values
+from sqlgpt_parser.sql_parser.tree.field_type import UNSPECIFIEDLENGTH, FieldType, SQLType
+from sqlgpt_parser.sql_parser.tree.with_stmt import With, CommonTableExpr, WithHasQuery
 
 tokens = tokens
 
@@ -190,7 +189,6 @@ def p_column_type(p):
                 | FLOAT column_end
                 | BIGINT column_end
                 | BIGINT LPAREN number RPAREN column_end
-                | TINYINT column_end
                 | TINYINT LPAREN number RPAREN column_end
                 | DATETIME column_end
                 | DATETIME LPAREN number RPAREN column_end
@@ -964,8 +962,8 @@ def p_priority(p):
 
 def p_distinct_opt(p):
     r"""distinct_opt : ALL
-    | DISTINCT
     | UNIQUE
+    | DISTINCT
     | DISTINCTROW"""
     p[0] = p[1]
 
@@ -1489,8 +1487,7 @@ def p_base_primary_expression(p):
     | case_specification
     | cast_func_call
     | window_func_call
-    | oceanbase_func_call
-    | odps_func_call"""
+    | oceanbase_func_call"""
 
     if p.slice[1].type == "qualified_name":
         p[0] = QualifiedNameReference(p.lineno(1), p.lexpos(1), name=p[1])
@@ -1530,14 +1527,15 @@ def p_oceanbase_func_call(p):
     | TIME_TO_USEC LPAREN expression RPAREN
     | NVL LPAREN expression COMMA expression RPAREN
     | ORA_DECODE LPAREN expression COMMA call_list RPAREN
-    | DECODE LPAREN expression COMMA call_list RPAREN
     | OB_VERSION LPAREN RPAREN
-    | oceanbase_cast_func_call 
+    | DECODE LPAREN expression COMMA call_list RPAREN
+    | oceanbase_cast_func_call
     """
     if len(p) == 2:
         p[0] = p[1]
     else:
-        arguments, call_list, length = [], [], len(p)
+        arguments, call_list = [], []
+        length = len(p)
         if p.slice[length - 2].type == "call_list":
             call_list = p[length - 2]
             length = length - 2
@@ -1601,12 +1599,6 @@ def p_oceanbase_cast_func_call(p):
         p[0] = FunctionCall(p.lineno(1), p.lexpos(1), name=p[1], distinct=False, arguments=[p[3], p[5]])
     else:
         p[0] = FunctionCall(p.lineno(1), p.lexpos(1), name=p[1], distinct=False, arguments=[p[3]])
-
-
-def p_odps_func_call(p):
-    r"""odps_func_call : MAX_PT LPAREN expression RPAREN
-    """
-    p[0] = FunctionCall(p.lineno(1), p.lexpos(1), name=p[1], arguments=[p[3]])
 
 
 def p_exists_func_call(p):
@@ -2982,6 +2974,7 @@ def p_qualified_name_list(p):
     else:
         p[1].append(p[3])
         p[0] = p[1]
+
 def p_qualified_name(p):
     r"""qualified_name : identifier
     | identifier PERIOD identifier
@@ -3435,7 +3428,6 @@ def p_non_reserved(p):
     | MAX_DISK_SIZE
     | MAX_IOPS
     | MAX_MEMORY
-    | MAX_PT
     | MAX_QUERIES_PER_HOUR
     | MAX_ROWS
     | MAX_SESSION_NUM

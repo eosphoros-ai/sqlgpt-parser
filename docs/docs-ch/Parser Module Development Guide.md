@@ -245,8 +245,9 @@ The comment in `p_delete` corresponds to the syntax rule for the `DELETE` statem
 Once the grammar rules are written, they can be used to parse SQL statements. Taking `mysql_parser` as an example, you can use this grammar rule for parsing SQL statements.
 
 ```python
-from src.parser.mysql_parser.parser import parser as mysql_parser
-from src.parser.mysql_parser.lexer import lexer as mysql_lexer
+from sqlgpt_parser.parser.mysql_parser.parser import parser as mysql_parser
+from sqlgpt_parser.parser.mysql_parser.lexer import lexer as mysql_lexer
+
 sql = "DELETE FROM t WHERE a=1"
 result = mysql_parser.parse(sql, lexer=mysql_lexer)
 ```

@@ -14,13 +14,13 @@
 
 import unittest
 
-from src.sql_parser.mysql_parser import parser as mysql_parser
-from src.sql_parser.oceanbase_parser import parser as oceanbase_parser
-from src.sql_parser.odps_parser import parser as odps_parser
-from src.sql_parser.tree.expression import LikePredicate, ExistsPredicate
-from src.sql_parser.tree.relation import Join
-from src.sql_parser.tree.set_operation import Union
-from src.sql_parser.tree.statement import Statement
+from sqlgpt_parser.sql_parser.mysql_parser import parser as mysql_parser
+from sqlgpt_parser.sql_parser.oceanbase_parser import parser as oceanbase_parser
+from sqlgpt_parser.sql_parser.odps_parser import parser as odps_parser
+from sqlgpt_parser.sql_parser.tree.expression import LikePredicate, ExistsPredicate
+from sqlgpt_parser.sql_parser.tree.relation import Join
+from sqlgpt_parser.sql_parser.tree.set_operation import Union
+from sqlgpt_parser.sql_parser.tree.statement import Statement
 
 
 class MyTestCase(unittest.TestCase):

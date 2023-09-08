@@ -11,21 +11,21 @@ pip install sqlgpt-parser
 ### Parser SQL
 
 ```python
->>> from sql_parser.mysql_parser import parser as mysql_parser
+>>> from sqlgpt_parser.sql_parser.mysql_parser import parser as mysql_parser
 >>> mysql_parser.parse("select * from t")
 Query(query_body=QuerySpecification(select=Select(distinct=False, select_items=[SingleColumn(expression=QualifiedNameReference(name=QualifiedName.of("*")))]), from_=Table(name=QualifiedName.of("t"), for_update=False), order_by=[], limit=0, offset=0, for_update=False, nowait_or_wait=False), order_by=[], limit=0, offset=0)
->>> from sql_parser.oceanbase_parser import parser as oceanbase_parser
+>>> from sqlgpt_parser.sql_parser.oceanbase_parser import parser as oceanbase_parser
 >>> oceanbase_parser.parse("select * from t")
 Query(query_body=QuerySpecification(select=Select(distinct=False, select_items=[SingleColumn(expression=QualifiedNameReference(name=QualifiedName.of("*")))]), from_=Table(name=QualifiedName.of("t"), for_update=False), order_by=[], limit=0, offset=0, for_update=False, nowait_or_wait=False), order_by=[], limit=0, offset=0)
->>> from sql_parser.odps_parser import parser as odps_parser
+>>> from sqlgpt_parser.sql_parser.odps_parser import parser as odps_parser
 >>> odps_parser.parse("select * from t")
 Query(query_body=QuerySpecification(select=Select(distinct=False, select_items=[SingleColumn(expression=QualifiedNameReference(name=QualifiedName.of("*")))]), from_=Table(name=QualifiedName.of("t"), for_update=False), order_by=[], limit=0, offset=0, for_update=False, nowait_or_wait=False), order_by=[], limit=0, offset=0)
 ```
 
 ### Format SQL
 ```python
->>> from sql_parser.format.formatter import format_sql
->>> from sql_parser.mysql_parser import parser
+>>> from sqlgpt_parser.format.formatter import format_sql
+>>> from sqlgpt_parser.mysql_parser import parser
 >>> result=parser.parse("select * from t")
 >>> format_sql(result)
 'SELECT\n  *\nFROM\n  t'
