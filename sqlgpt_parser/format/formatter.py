@@ -36,6 +36,9 @@ class Formatter(AstVisitor):
             self.process(node.time_zone, context),
         )
 
+    def visit_time_interval(self, node, context):
+        return f"INTERVAL {self.process(node.value, context)} {node.unit.upper()}"
+
     def visit_current_time(self, node, unmangle_names):
         return "%s%s" % (node.type, "(%s)" % node.precision if node.precision else "")
 
@@ -106,7 +109,7 @@ class Formatter(AstVisitor):
 
     def visit_function_call(self, node, unmangle_names):
         ret = ""
-        arguments = self._join_expressions(node.args, unmangle_names)
+        arguments = self._join_expressions(node.arguments, unmangle_names)
         if "count" == node.name.lower() and len(arguments) != 0 and arguments[0] == '*':
             arguments = "*"
         if node.distinct:

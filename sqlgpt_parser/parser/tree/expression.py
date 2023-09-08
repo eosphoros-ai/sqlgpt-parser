@@ -215,6 +215,16 @@ class FunctionCall(Expression):
         return visitor.visit_function_call(self, context)
 
 
+class TimeInterval(Node):
+    def __int__(self, line=None, pos=None, value=None, unit=None):
+        super(Node, self).__int__(line, pos)
+        self.value = value
+        self.unit = unit
+
+    def accept(self, visitor, context):
+        return visitor.visit_time_interval(self, context)
+
+
 class SoundLike(FunctionCall):
     def __init__(self, line=None, pos=None, arguments=None):
         super(SoundLike, self).__init__(line, pos, arguments=arguments)

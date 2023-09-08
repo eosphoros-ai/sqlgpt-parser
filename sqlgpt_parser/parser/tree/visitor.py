@@ -279,6 +279,9 @@ class AstVisitor(object):
     def visit_cast(self, node, context):
         return self.visit_expression(node, context)
 
+    def visit_time_interval(self, node, context):
+        return self.visit_expression(node, context)
+
     def visit_convert(self, node, context):
         return self.visit_expression(node, context)
 
@@ -399,6 +402,9 @@ class DefaultTraversalVisitor(AstVisitor):
 
     def visit_cast(self, node, context):
         return self.process(node.expression, context)
+
+    def visit_time_interval(self, node, context):
+        return self.visit_expression(node, context)
 
     def visit_convert(self, node, context):
         return self.visit_expression(node, context)

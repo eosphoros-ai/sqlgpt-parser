@@ -186,7 +186,15 @@ FROM
         for sql, except_sql in test_sqls_except.items():
             statement = parser.parse(sql)
             after_sql_rewrite_format = format_sql(statement, 0)
-            print(after_sql_rewrite_format)
+            assert after_sql_rewrite_format == except_sql
+
+    def test_time_interval(self):
+        test_sqls_except = {
+            "SELECT date FROM `inv` WHERE date=DATE_ADD(creation_time, INTERVAL 4 HOUR)": "SELECT\n  date\nFROM\n  inv\nWHERE date = DATE_ADD(creation_time, INTERVAL 4 HOUR)"
+        }
+        for sql, except_sql in test_sqls_except.items():
+            statement = parser.parse(sql)
+            after_sql_rewrite_format = format_sql(statement, 0)
             assert after_sql_rewrite_format == except_sql
 
 

@@ -59,6 +59,7 @@ from sqlgpt_parser.parser.tree.expression import (
     TrimFunc,
     WhenClause,
     JsonTableColumn,
+    TimeInterval,
 )
 from sqlgpt_parser.parser.tree.grouping import SimpleGroupBy
 from sqlgpt_parser.parser.tree.join_criteria import JoinOn, JoinUsing, NaturalJoin
@@ -72,6 +73,7 @@ from sqlgpt_parser.parser.tree.literal import (
     TimeLiteral,
     DefaultLiteral,
     ErrorLiteral,
+    TimestampLiteral,
 )
 from sqlgpt_parser.parser.tree.node import Node
 from sqlgpt_parser.parser.tree.qualified_name import QualifiedName
@@ -689,7 +691,12 @@ def p_date_lit(p):
     r"""date_lit : DATE  string_lit
     | TIME  string_lit
     | TIMESTAMP  string_lit"""
-    p[0] = DateLiteral(p.lineno(1), p.lexpos(1), value=p[2], unit=p[1])
+    if p.slice[1].type.upper() == "DATE":
+        p[0] = DateLiteral(p.lineno(1), p.lexpos(1), value=p[2])
+    elif p.slice[1].type.upper() == "TIME":
+        p[0] = TimeLiteral(p.lineno(1), p.lexpos(1), value=p[2])
+    elif p.slice[1].type.upper() == "TIMESTAMP":
+        p[0] = TimestampLiteral(p.lineno(1), p.lexpos(1), value=p[2])
 
 
 def p_order(p):
@@ -3437,7 +3444,7 @@ def p_time_interval(p):
     r"""time_interval : INTERVAL expression time_unit
     | QM"""
     if len(p) == 4:
-        p[0] = TimeLiteral(p.lineno(1), p.lexpos(1), value=p[2], unit=p[3])
+        p[0] = TimeInterval(p.lineno(1), p.lexpos(1), value=p[2], unit=p[3])
     else:
         p[0] = p[1]
 
