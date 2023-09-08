@@ -14,12 +14,12 @@
 
 import unittest
 
-from sqlgpt_parser.sql_parser.tree.with_stmt import WithHasQuery
+from sqlgpt_parser.parser.tree.with_stmt import WithHasQuery
 
-from sqlgpt_parser.sql_parser.mysql_parser import parser as mysql_parser
-from sqlgpt_parser.sql_parser.oceanbase_parser import parser as oceanbase_parser
-from sqlgpt_parser.sql_parser.tree.expression import ComparisonExpression
-from sqlgpt_parser.sql_parser.tree.statement import Statement
+from sqlgpt_parser.parser.mysql_parser import parser as mysql_parser
+from sqlgpt_parser.parser.oceanbase_parser import parser as oceanbase_parser
+from sqlgpt_parser.parser.tree.expression import ComparisonExpression
+from sqlgpt_parser.parser.tree.statement import Statement
 import warnings
 
 

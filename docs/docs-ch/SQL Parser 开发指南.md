@@ -2,7 +2,7 @@
 
 `parser` 是 `sqlgpt-parser` 的基础模块，它将 SQL 语句按照预定义 SQL 语法规则解析，从文本转换成抽象语法树（`AST`）。
 
- `sqlgpt-parser` 的 `parser`  基于  [PLY](https://github.com/dabeaz/ply)  编写。PLY 是一个用于构建词法和语法分析器的 Python 工具。它能够根据指定的模式对输入的文本进行分析，它会在程序运行之前，自动编译项目 [sql-parser](../../sqlgpt_parser/sql_parser/)  文件夹下的词法规则和语法规则文件，生成可执行代码。
+ `sqlgpt-parser` 的 `parser`  基于  [PLY](https://github.com/dabeaz/ply)  编写。PLY 是一个用于构建词法和语法分析器的 Python 工具。它能够根据指定的模式对输入的文本进行分析，它会在程序运行之前，自动编译项目 [sql-parser](../../sqlgpt_parser/parser/)  文件夹下的词法规则和语法规则文件，生成可执行代码。
 
 ## 词法解析与语法解析
 
@@ -161,7 +161,7 @@ def p_expr_paren(p):
 
 ## `sqlgpt-parser`的 `parser` 实现
 
-`sqlgpt-parser` 中共有三个 SQL  语法解析器 ，分别在  [mysql_parser](../../sqlgpt_parser/sql_parser/mysql_parser)、 [oceanbase_parser](../../sqlgpt_parser/sql_parser/oceanbase_parser) 和  [odps_parser](../../sqlgpt_parser/sql_parser/odps_parser) 文件夹下，三个文件夹都包含`lexer.py`，`reserved.py`，`parser.py` 三个文件。
+`sqlgpt-parser` 中共有三个 SQL  语法解析器 ，分别在  [mysql_parser](../../sqlgpt_parser/parser/mysql_parser)、 [oceanbase_parser](../../sqlgpt_parser/parser/oceanbase_parser) 和  [odps_parser](../../sqlgpt_parser/parser/odps_parser) 文件夹下，三个文件夹都包含`lexer.py`，`reserved.py`，`parser.py` 三个文件。
 
 `lexer.py` 和`reserved.py` 文件都用于词法解析。`reserved.py` 中定义了 SQL 的关键字，关键字定义在`reserved` 和 `nonreserved` 两个变量中 ，`reserved` 里面包含了所有 `sql` 中不可用作列名、表名或者别名的关键字，`nonreserved` 则是可以用作列名、表名或者别名的关键字。
 
@@ -260,7 +260,7 @@ def p_delete(p):
 完成语法规则的编写后就可以使用，该语法规则解析 `SQL` 语句，以 `mysql_parser` 为例。
 
 ```python
-from sqlgpt_parser.sql_parser.mysql_parser import parser as mysql_parser
+from sqlgpt_parser.parser.mysql_parser import parser as mysql_parser
 
 sql = "DELETE FROM t WHERE a=1"
 result = mysql_parser.parse(sql)

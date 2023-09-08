@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 from __future__ import print_function
 
 import types, threading
-from sqlgpt_parser.sql_parser.tree.window import (
+from sqlgpt_parser.parser.tree.window import (
     FrameBound,
     FrameClause,
     FrameExpr,
@@ -23,9 +23,9 @@ from sqlgpt_parser.sql_parser.tree.window import (
 )
 
 from ply import yacc
-from sqlgpt_parser.sql_parser.tree.index_type import IndexType
-from sqlgpt_parser.sql_parser.oceanbase_parser.lexer import tokens, lexer
-from sqlgpt_parser.sql_parser.tree.expression import (
+from sqlgpt_parser.parser.tree.index_type import IndexType
+from sqlgpt_parser.parser.oceanbase_parser.lexer import tokens, lexer
+from sqlgpt_parser.parser.tree.expression import (
     AggregateFunc,
     ArithmeticBinaryExpression,
     ArithmeticUnaryExpression,
@@ -60,9 +60,9 @@ from sqlgpt_parser.sql_parser.tree.expression import (
     WhenClause,
     JsonTableColumn,
 )
-from sqlgpt_parser.sql_parser.tree.grouping import SimpleGroupBy
-from sqlgpt_parser.sql_parser.tree.join_criteria import JoinOn, JoinUsing, NaturalJoin
-from sqlgpt_parser.sql_parser.tree.literal import (
+from sqlgpt_parser.parser.tree.grouping import SimpleGroupBy
+from sqlgpt_parser.parser.tree.join_criteria import JoinOn, JoinUsing, NaturalJoin
+from sqlgpt_parser.parser.tree.literal import (
     BooleanLiteral,
     DateLiteral,
     DoubleLiteral,
@@ -73,19 +73,19 @@ from sqlgpt_parser.sql_parser.tree.literal import (
     DefaultLiteral,
     ErrorLiteral,
 )
-from sqlgpt_parser.sql_parser.tree.node import Node
-from sqlgpt_parser.sql_parser.tree.qualified_name import QualifiedName
-from sqlgpt_parser.sql_parser.tree.query_specification import QuerySpecification
-from sqlgpt_parser.sql_parser.tree.relation import AliasedRelation, Join
-from sqlgpt_parser.sql_parser.tree.select import Select
-from sqlgpt_parser.sql_parser.tree.select_item import Partition, SingleColumn
-from sqlgpt_parser.sql_parser.tree.set_operation import Except, Intersect, Union
-from sqlgpt_parser.sql_parser.tree.sort_item import ByItem, PartitionByClause, SortItem
-from sqlgpt_parser.sql_parser.tree.statement import Delete, Insert, Query, Update
-from sqlgpt_parser.sql_parser.tree.table import Table
-from sqlgpt_parser.sql_parser.tree.values import Values
-from sqlgpt_parser.sql_parser.tree.field_type import UNSPECIFIEDLENGTH, FieldType, SQLType
-from sqlgpt_parser.sql_parser.tree.with_stmt import With, CommonTableExpr, WithHasQuery
+from sqlgpt_parser.parser.tree.node import Node
+from sqlgpt_parser.parser.tree.qualified_name import QualifiedName
+from sqlgpt_parser.parser.tree.query_specification import QuerySpecification
+from sqlgpt_parser.parser.tree.relation import AliasedRelation, Join
+from sqlgpt_parser.parser.tree.select import Select
+from sqlgpt_parser.parser.tree.select_item import Partition, SingleColumn
+from sqlgpt_parser.parser.tree.set_operation import Except, Intersect, Union
+from sqlgpt_parser.parser.tree.sort_item import ByItem, PartitionByClause, SortItem
+from sqlgpt_parser.parser.tree.statement import Delete, Insert, Query, Update
+from sqlgpt_parser.parser.tree.table import Table
+from sqlgpt_parser.parser.tree.values import Values
+from sqlgpt_parser.parser.tree.field_type import UNSPECIFIEDLENGTH, FieldType, SQLType
+from sqlgpt_parser.parser.tree.with_stmt import With, CommonTableExpr, WithHasQuery
 
 tokens = tokens
 
