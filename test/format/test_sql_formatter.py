@@ -1,7 +1,7 @@
 import unittest
 
 from sqlgpt_parser.format.formatter import format_sql
-from sqlgpt_parser.sql_parser.mysql_parser import parser
+from sqlgpt_parser.parser.mysql_parser import parser
 
 
 class MyTestCase(unittest.TestCase):

@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "sqlgpt-parser"
-version = "0.0.1a2"
+version = "0.0.1a3"
 authors = [
   { name="luliwjc", email="chenxiaoxi_wjc@163.com" },
   { name="Ifffff", email="tingkai.ztk@antgroup.com" },
@@ -37,7 +37,7 @@ dependencies = [
 [tool.black]
     skip-string-normalization = 1
     force-exclude = '''
-    src/sql_parser/mysql_parser/parser_table.py
-    | src/sql_parser/oceanbase_parser/parser_table.py
-    | src/sql_parser/odps_parser/parser_table.py
+    sqlgpt_parser/parser/mysql_parser/parser_table.py
+    | sqlgpt_parser/parser/oceanbase_parser/parser_table.py
+    |  sqlgpt_parser/parser/odps_parser/parser_table.py
     '''

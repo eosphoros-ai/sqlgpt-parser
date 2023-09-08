@@ -13,11 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 import re
 from ply import lex
 
-from sqlgpt_parser.sql_parser.mysql_parser.reserved import (
-    reversed,
-    nonreserved,
-    not_keyword_token,
-)
+from sqlgpt_parser.parser.odps_parser.reserved import reserved, nonreserved
 
 tokens = (
     [
@@ -38,33 +34,32 @@ tokens = (
         'LT',
         'LE',
         'EQ',
-        'NE',
         'NULL_SAFE_EQ',
+        'NE',
         'BIT_OR',
         'BIT_AND',
         'BIT_XOR',
         'BIT_OPPOSITE',
+        'SINGLE_AT_IDENTIFIER',
+        'DOUBLE_AT_IDENTIFIER',
         'EXCLA_MARK',
         'BIT_MOVE_LEFT',
         'BIT_MOVE_RIGHT',
         'PIPES',
         'SLASH',
         'ASTERISK',
-        'PERCENT',
-        'NUMBER',
-        'FRACTION',
         'QM',
         'SCONST',
-        'SINGLE_AT_IDENTIFIER',
-        'DOUBLE_AT_IDENTIFIER',
+        'PERCENT',
+        'FRACTION',
+        'NUMBER',
         'HEX_NUMBER',
     ]
-    + list(reversed)
+    + list(reserved)
     + list(nonreserved)
-    + list(not_keyword_token)
 )
 
-sql_tokens = list(reversed) + list(nonreserved) + list(not_keyword_token)
+sql_tokens = list(reserved) + list(nonreserved)
 
 t_LPAREN = r'\('
 t_RPAREN = r'\)'
@@ -86,10 +81,6 @@ t_SLASH = r'/'
 t_PERCENT = r'%'
 t_QM = r'\?'
 
-# TODO
-# By default, || is a logical OR operator.
-# With PIPES_AS_CONCAT enabled, || is string concatenation.
-# Need support or semantics in future development
 t_PIPES = r'\|\|'
 
 t_ignore = ' \t'
@@ -107,13 +98,14 @@ t_EXCLA_MARK = r'!'
 def t_DOUBLE(t):
     r"[0-9]*\.[0-9]+([eE][-+]?[0-9]+)?|[-+]?[0-9]+([eE][-+]?[0-9]+)"
     if 'e' in t.value or 'E' in t.value or '.' in t.value:
-        t.type = 'FRACTION'
+        t.type = "FRACTION"
     else:
         t.type = "NUMBER"
     return t
 
 
 # String literal
+# double ' means single '
 def t_SCONST(t):
     r"""'(\\['\\]|[^']|[']{2})*'"""
     t.type = "SCONST"
@@ -140,6 +132,12 @@ def t_IDENTIFIER(t):
     return t
 
 
+def t_QUOTED_IDENTIFIER(t):
+    r'"(\\[\\"]|[^"]|["]{2})*"'
+    t.type = "QUOTED_IDENTIFIER"
+    return t
+
+
 # start with single @
 def t_SINGLE_AT_IDENTIFIER(t):
     r"""@[^@][\w@\u4e00-\u9fa5]*"""
@@ -151,12 +149,6 @@ def t_SINGLE_AT_IDENTIFIER(t):
 def t_DOUBLE_AT_IDENTIFIER(t):
     r"""@@[\w@\u4e00-\u9fa5]*"""
     t.type = "DOUBLE_AT_IDENTIFIER"
-    return t
-
-
-def t_QUOTED_IDENTIFIER(t):
-    r'"(\\["\\]|[^"]|["]{2})*"'
-    t.type = "QUOTED_IDENTIFIER"
     return t
 
 

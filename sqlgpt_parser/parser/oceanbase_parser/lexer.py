@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 import re
 from ply import lex
 
-from sqlgpt_parser.sql_parser.oceanbase_parser.reserved import reserved, nonreserved
+from sqlgpt_parser.parser.oceanbase_parser.reserved import reserved, nonreserved
 
 tokens = (
     [
