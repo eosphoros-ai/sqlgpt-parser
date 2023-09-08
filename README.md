@@ -34,7 +34,7 @@ Query(query_body=QuerySpecification(select=Select(distinct=False, select_items=[
 ### Format SQL
 ```python
 >>> from sqlgpt_parser.format.formatter import format_sql
->>> from sqlgpt_parser.mysql_parser import parser
+>>> from sqlgpt_parser.parser.mysql_parser import parser
 >>> result=parser.parse("select * from t")
 >>> format_sql(result)
 'SELECT\n  *\nFROM\n  t'
