@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "sqlgpt-parser"
-version = "0.0.1a1"
+version = "0.0.1a2"
 authors = [
   { name="luliwjc", email="chenxiaoxi_wjc@163.com" },
   { name="Ifffff", email="tingkai.ztk@antgroup.com" },
@@ -24,8 +24,6 @@ dependencies = [
     "ply == 3.11",
 ]
 
-[tool.flit.module]
-name = "sql_parser"
 [project.urls]
 "Homepage" = "https://github.com/eosphoros-ai/sqlgpt-parser"
 "Bug Tracker" = "https://github.com/eosphoros-ai/sqlgpt-parser/issues"
