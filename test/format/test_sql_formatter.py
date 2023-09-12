@@ -197,6 +197,23 @@ FROM
             after_sql_rewrite_format = format_sql(statement, 0)
             assert after_sql_rewrite_format == except_sql
 
+    def test_windows_function(self):
+        test_sqls_except = {
+            "SELECT  first_value(value) OVER (PARTITION BY id ORDER BY date ROWS BETWEEN UNBOUNDED PRECEDING AND "
+            "UNBOUNDED FOLLOWING) AS first_val FROM  my_table": "SELECT\n"
+            "  FIRST_VALUE(value) OVER (ORDER BY date ASC ROWS BETWEEN UNBOUNDED  PRECEDING AND UNBOUNDED  FOLLOWING) AS first_val"
+            "\nFROM\n  my_table",
+            "SELECT first_value(value) OVER (PARTITION BY id ORDER BY date RANGE UNBOUNDED PRECEDING) "
+            "AS first_val FROM my_table": "SELECT"
+            "\n  FIRST_VALUE(value) OVER (ORDER BY date ASC RANGE UNBOUNDED  PRECEDING) AS first_val"
+            "\nFROM"
+            "\n  my_table",
+        }
+        for sql, except_sql in test_sqls_except.items():
+            statement = parser.parse(sql)
+            after_sql_rewrite_format = format_sql(statement, 0)
+            assert after_sql_rewrite_format == except_sql
+
 
 if __name__ == '__main__':
     unittest.main()

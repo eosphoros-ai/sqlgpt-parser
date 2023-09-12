@@ -1570,7 +1570,7 @@ def p_window_func_call(p):
     | ROW_NUMBER LPAREN RPAREN over_clause
     """
     length = len(p)
-    window_spec = p[-1]
+    window_spec = p[length-1]
     args = []
     ignore_null = None
 
@@ -1711,7 +1711,10 @@ def p_frame_start(p):
     | frame_expr PRECEDING
     | frame_expr FOLLOWING
     """
-    p[0] = FrameBound(p.lineno(1), p.lexpos(1), type=p[2], expr=p[1])
+    if p.slice[1].type == 'frame_expr':
+        p[0] = FrameBound(p.lineno(1), p.lexpos(1), type=p[2], expr=p[1])
+    else:
+        p[0] = FrameBound(p.lineno(1), p.lexpos(1), type=p[2], expr=None)
 
 
 def p_frame_end(p):
@@ -1726,13 +1729,8 @@ def p_frame_between(p):
 
 def p_frame_expr(p):
     r"""frame_expr : figure
-    | QM
-    | INTERVAL expression time_unit
-    |"""
-    if len(p) == 4:
-        p[0] = FrameExpr(p.lineno(1), p.lexpos(1), value=p[2], unit=p[3])
-    else:
-        p[0] = FrameExpr(p.lineno(1), p.lexpos(1), value=p[1])
+    | time_interval"""
+    p[0] = FrameExpr(p.lineno(1), p.lexpos(1), value=p[1])
 
 
 def p_lead_lag_info_opt(p):

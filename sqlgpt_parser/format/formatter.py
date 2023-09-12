@@ -421,24 +421,31 @@ class Formatter(AstVisitor):
         else:
             return "(%s)" % self._join_expressions(node.values, unmangle_names)
 
+    def visit_window_func(self, node, unmangle_names):
+        args = ", ".join([self.process(arg, unmangle_names) for arg in node.func_args])
+        ignore_null = f" {node.ignore_null} NULLS" if node.ignore_null else ""
+        window_spec = " OVER (" + self.process(node.window_spec, unmangle_names) + ")"
+        return f"{node.func_name.upper()}({args}){ignore_null}{window_spec}"
+
     def visit_window_spec(self, node, unmangle_names):
         parts = []
-
         if node.partition_by:
-            parts.append(
-                "PARTITION BY "
-                + self._join_expressions(node.partition_by, unmangle_names)
-            )
+            self.process(node.partition_by, unmangle_names)
         if node.order_by:
             parts.append("ORDER BY " + format_sort_items(node.order_by, unmangle_names))
-        if node.frame:
-            parts.append(self.process(node.frame, unmangle_names))
+        if node.frame_clause:
+            parts.append(self.process(node.frame_clause, unmangle_names))
 
-        return '(' + ' '.join(parts) + ')'
+        return ' '.join(parts)
+
+    def visit_partition_by_clause(self, node, unmangle_names):
+        return "PARTITION BY " + self._join_expressions(node.items, unmangle_names)
+
+    def visit_frame_clause(self, node, unmangle_names):
+        return f"{node.type} {self.process(node.frame_range, unmangle_names)}"
 
     def visit_window_frame(self, node, unmangle_names):
-        ret = node.type + " "
-
+        ret = ""
         if node.end:
             ret += "BETWEEN %s AND %s" % (
                 self.process(node.start, unmangle_names),
@@ -448,6 +455,19 @@ class Formatter(AstVisitor):
             ret += self.process(node.start, unmangle_names)
 
         return ret
+
+    def visit_frame_bound(self, node, unmangle_names):
+        if node.type.upper() == "ROW":
+            return "CURRENT ROW"
+        expr = (
+            self.process(node.expr, unmangle_names)
+            if node.expr is not None
+            else "UNBOUNDED "
+        )
+        return f"{expr} {node.type.upper()}"
+
+    def visit_frame_expr(self, node, unmangle_names):
+        return self.process(node.value, unmangle_names)
 
     def visit_single_column(self, node, indent):
         format_expression(node.expression)
@@ -467,6 +487,9 @@ class Formatter(AstVisitor):
             full_text_search_modifier = " " + " ".join(node.search_modifier)
         full_text_search_modifier = full_text_search_modifier.upper()
         return f"MATCH({columns}) AGAINST ({self.process(node.expr, unmangle_names)}{full_text_search_modifier})"
+
+    def visit_sound_like(self, node, unmangle_names):
+        return f"{self.process(node.arguments[0])} SOUNDS LIKE {self.process(node.arguments[1])}"
 
     def _format_binary_expression(self, operator, left, right, unmangle_names):
         return "%s %s %s" % (
@@ -689,13 +712,14 @@ class SqlFormatter(Formatter):
         return None
 
     def visit_union(self, node, indent):
-        all = node.all
         for i, relation in enumerate(node.relations):
             self._process_relation(relation, indent)
             self.builder.append("\n")
             if i != len(node.relations) - 1:
-                if all:
+                if node.all:
                     self._append(indent, "UNION ALL")
+                elif node.distinct:
+                    self._append(indent, "UNION DISTINCT")
                 else:
                     self._append(indent, "UNION")
                 self.builder.append("\n")
@@ -704,7 +728,12 @@ class SqlFormatter(Formatter):
 
     def visit_except(self, node, indent):
         self._process_relation(node.left, indent)
-        self.builder.append("EXCEPT " + "ALL " if not node.distinct else "")
+        if node.all is not None:
+            self._append(indent, "EXCEPT ALL")
+        elif node.distinct is not None:
+            self._append(indent, "EXCEPT DISTINCT")
+        else:
+            self._append(indent, "EXCEPT")
         self._process_relation(node.right, indent)
 
         return None
@@ -756,7 +785,11 @@ class SqlFormatter(Formatter):
         relations = [
             self._process_relation(relation, indent) for relation in node.relations
         ]
-        intersect = "INTERSECT " + "ALL " if not node.distinct else ""
+        intersect = "INTERSECT"
+        if node.all is not None:
+            intersect += " ALL"
+        elif node.distinct is not None:
+            intersect += " DISTINCT"
         self.builder.append(intersect.join(relations))
         return None
 
