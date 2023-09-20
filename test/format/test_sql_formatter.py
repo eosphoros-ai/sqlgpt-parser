@@ -1,5 +1,7 @@
 import unittest
 
+from sqlgpt_parser.parser.parser_utils import ParserUtils
+
 from sqlgpt_parser.format.formatter import format_sql
 from sqlgpt_parser.parser.mysql_parser import parser
 
@@ -213,6 +215,42 @@ FROM
             statement = parser.parse(sql)
             after_sql_rewrite_format = format_sql(statement, 0)
             assert after_sql_rewrite_format == except_sql
+
+    def test_sql(self):
+        test_sqls = [
+            "update sqless_base set nick=1231 where a = 1 and b = 2 ",
+            "select 1,t2.a from t1 left join t2 where t1.d > 2 and t2.a =1",
+        ]
+        except_table_list = [
+            [
+                {
+                    'alias': '',
+                    'filter_column_list': [
+                        {'column_name': 'a', 'opt': '='},
+                        {'column_name': 'b', 'opt': '='},
+                    ],
+                    'table_name': 'sqless_base',
+                }
+            ],
+            [
+                {'alias': '', 'filter_column_list': [], 'table_name': 't1'},
+                {
+                    'alias': '',
+                    'filter_column_list': [
+                        {'column_name': 'd', 'opt': '>'},
+                        {'column_name': 'a', 'opt': '='},
+                    ],
+                    'table_name': 't2',
+                },
+            ],
+        ]
+        except_projection_list = [[], ['a']]
+        for index, sql in enumerate(test_sqls):
+            statement = parser.parse(sql)
+            visitor = ParserUtils.format_statement(statement)
+            print(visitor)
+            visitor.table_list = except_table_list[index]
+            visitor.projection_column_list = except_projection_list[index]
 
 
 if __name__ == '__main__':

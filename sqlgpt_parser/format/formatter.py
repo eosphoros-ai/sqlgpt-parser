@@ -424,10 +424,13 @@ class Formatter(AstVisitor):
     def visit_window_func(self, node, unmangle_names):
         args = ", ".join([self.process(arg, unmangle_names) for arg in node.func_args])
         ignore_null = f" {node.ignore_null} NULLS" if node.ignore_null else ""
-        window_spec = " OVER (" + self.process(node.window_spec, unmangle_names) + ")"
+        window_spec = " OVER " + self.process(node.window_spec, unmangle_names)
         return f"{node.func_name.upper()}({args}){ignore_null}{window_spec}"
 
     def visit_window_spec(self, node, unmangle_names):
+        if node.window_name is not None:
+            return node.window_name
+
         parts = []
         if node.partition_by:
             self.process(node.partition_by, unmangle_names)
@@ -435,8 +438,7 @@ class Formatter(AstVisitor):
             parts.append("ORDER BY " + format_sort_items(node.order_by, unmangle_names))
         if node.frame_clause:
             parts.append(self.process(node.frame_clause, unmangle_names))
-
-        return ' '.join(parts)
+        return '(' + ' '.join(parts) + ')'
 
     def visit_partition_by_clause(self, node, unmangle_names):
         return "PARTITION BY " + self._join_expressions(node.items, unmangle_names)

@@ -1206,7 +1206,7 @@ def p_alias_opt(p):
     if p.slice[1].type == "alias":
         p[0] = p[1]
     else:
-        p[0] = ()
+        p[0] = []
 
 
 def p_alias(p):
@@ -1215,9 +1215,9 @@ def p_alias(p):
     | AS string_lit
     | string_lit"""
     if len(p) == 3:
-        p[0] = (p[1], p[2])
+        p[0] = [p[1], p[2]]
     else:
-        p[0] = p[1]
+        p[0] = [p[1]]
 
 
 def p_expression(p):

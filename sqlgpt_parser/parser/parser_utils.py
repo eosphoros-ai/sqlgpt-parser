@@ -12,10 +12,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 
 from sqlgpt_parser.parser.tree.grouping import GroupingSets, SimpleGroupBy
 from sqlgpt_parser.parser.tree.literal import StringLiteral
-from sqlgpt_parser.parser.tree.select_item import SingleColumn
 from sqlgpt_parser.parser.tree.visitor import DefaultTraversalVisitor
 from sqlgpt_parser.parser.tree.expression import (
-    FunctionCall,
     InListExpression,
     QualifiedNameReference,
     SubqueryExpression,
@@ -23,6 +21,13 @@ from sqlgpt_parser.parser.tree.expression import (
 
 
 class ParserUtils(object):
+    class CollectInfo:
+        COLLECT_FILTER_COLUMN = 1
+        COLLECT_PROJECT_COLUMN = 2
+        COLLECT_TABLE = 4
+        COLLECT_MIN_MAX_EXPRESSION_COLUMN = 8
+        COLLECT_IN_EXPRESSION_COLUMN = 16
+
     @staticmethod
     def format_statement(statement):
         class FormatVisitor(DefaultTraversalVisitor):
@@ -50,32 +55,49 @@ class ParserUtils(object):
                 self.limit_number = 0
                 self.recursion_count = 0
 
-            def visit_table(self, node, context):
+            def add_project_column(self, project_column):
+                self.projection_column_list.append(project_column)
+
+            def add_table(self, table_name, alias=''):
                 self.table_list.append(
-                    {
-                        'table_name': node.name.parts[0]
-                        if len(node.name.parts) == 1
-                        else node.name.parts[1],
-                        'alias': '',
-                        'filter_column_list': [],
-                    }
+                    {'table_name': table_name, 'alias': alias, 'filter_column_list': []}
                 )
+
+            def add_filter_column(
+                self, filter_col, compare_type, table_or_alias_name=None
+            ):
+                filter_column_list = None
+                if table_or_alias_name is not None:
+                    for table in self.table_list:
+                        if (
+                            table['alias'] == table_or_alias_name
+                            or table['table_name'] == table_or_alias_name
+                        ):
+                            filter_column_list = table['filter_column_list']
+                else:
+                    filter_column_list = self.table_list[-1]['filter_column_list']
+                filter_column_list.append(
+                    {"column_name": filter_col, 'opt': compare_type}
+                )
+
+            def visit_table(self, node, context):
+                if context & ParserUtils.CollectInfo.COLLECT_TABLE:
+                    table_name = node.name.parts[-1]
+                    self.add_table(table_name)
                 return self.visit_query_body(node, context)
 
             def visit_aliased_relation(self, node, context):
                 alias = ""
                 if len(node.alias) == 2:
                     alias = node.alias[1]
-                elif len(node.alias) == 1:
+                else:
                     alias = node.alias[0]
-                if not isinstance(node.relation, SubqueryExpression):
-                    self.table_list.append(
-                        {
-                            'table_name': node.relation.name.parts[0],
-                            'alias': alias,
-                            'filter_column_list': [],
-                        }
-                    )
+                if (
+                    not isinstance(node.relation, SubqueryExpression)
+                    and context & ParserUtils.CollectInfo.COLLECT_TABLE
+                ):
+                    table_name = node.relation.name.parts[-1]
+                    self.add_table(table_name, alias)
                 else:
                     return self.process(node.relation, context)
 
@@ -92,36 +114,23 @@ class ParserUtils(object):
             def visit_comparison_expression(self, node, context):
                 left = node.left
                 right = node.right
-                type = node.type
-                qualified_name_list = []
+
+                def add_filter_column(name):
+                    table_name = None
+                    if len(name.parts) > 2:
+                        table_name = name.parts[-2]
+                    self.add_filter_column(name.parts[-1], node.type, table_name)
 
                 if isinstance(right, QualifiedNameReference):
-                    qualified_name_list.append(right.name)
+                    if context & ParserUtils.CollectInfo.COLLECT_FILTER_COLUMN:
+                        add_filter_column(right.name)
+                else:
+                    self.process(node.right, context)
                 if isinstance(left, QualifiedNameReference):
-                    qualified_name_list.append(left.name)
-
-                for qualified_name in qualified_name_list:
-                    if len(qualified_name.parts) == 2:
-                        table_or_alias_name = qualified_name.parts[0]
-                        for _table in self.table_list:
-                            if (
-                                _table['alias'] == table_or_alias_name
-                                or _table['table_name'] == table_or_alias_name
-                            ):
-                                filter_column_list = _table['filter_column_list']
-                                filter_column_list.append(
-                                    {
-                                        'column_name': qualified_name.parts[1],
-                                        'opt': type,
-                                    }
-                                )
-                    else:
-                        filter_column_list = self.table_list[-1]['filter_column_list']
-                        filter_column_list.append(
-                            {'column_name': qualified_name.parts[0], 'opt': type}
-                        )
-
-                return self.visit_expression(node, context)
+                    if context & ParserUtils.CollectInfo.COLLECT_FILTER_COLUMN:
+                        add_filter_column(left.name)
+                else:
+                    self.process(node.left, context)
 
             def visit_like_predicate(self, node, context):
                 if isinstance(node.value, QualifiedNameReference):
@@ -130,12 +139,16 @@ class ParserUtils(object):
                     if isinstance(pattern, StringLiteral):
                         if not pattern.value.startswith('%'):
                             can_query_range = True
-                    if can_query_range:
-                        self.add_filter_column_with_qualified_name_reference(
-                            node.value, 'like'
-                        )
+                    if (
+                        can_query_range
+                        and context & ParserUtils.CollectInfo.COLLECT_FILTER_COLUMN
+                    ):
+                        value, table_name = node.value, None
+                        if len(value.name.parts) > 2:
+                            table_name = value.name.parts[-2]
+                        self.add_filter_column(value.name.parts[-1], 'like', table_name)
 
-                return self.visit_expression(node, context)
+                self.process(node.pattern, context)
 
             def visit_not_expression(self, node, context):
                 return self.process(node.value, "not")
@@ -144,56 +157,44 @@ class ParserUtils(object):
                 value = node.value
 
                 if not node.is_not:
-                    if isinstance(node.value_list, InListExpression):
+                    if (
+                        isinstance(node.value_list, InListExpression)
+                        and context
+                        & ParserUtils.CollectInfo.COLLECT_IN_EXPRESSION_COLUMN
+                    ):
                         self.in_count_list.append(len(node.value_list.values))
-                    if isinstance(value, QualifiedNameReference):
-                        self.add_filter_column_with_qualified_name_reference(
-                            value, 'in'
-                        )
+                    if (
+                        isinstance(value, QualifiedNameReference)
+                        and context & ParserUtils.CollectInfo.COLLECT_FILTER_COLUMN
+                    ):
+                        table_name = None
+                        if len(value.name.parts) > 2:
+                            table_name = value.name.parts[-2]
+                        self.add_filter_column(value.name.parts[-1], 'in', table_name)
 
-                self.process(node.value, None)
-                self.process(node.value_list, None)
+                self.process(node.value, context)
+                self.process(node.value_list, context)
                 return None
 
             def visit_select(self, node, context):
                 for item in node.select_items:
-                    if isinstance(item, SingleColumn):
-                        expression = item.expression
-                        if isinstance(expression, QualifiedNameReference):
-                            name = expression.name
-                            if len(name.parts) == 2:
-                                self.projection_column_list.append(name.parts[1])
-                            else:
-                                self.projection_column_list.append(name.parts[0])
-                        if isinstance(expression, FunctionCall):
-                            arguments = expression.arguments
-                            if len(arguments) > 0:
-                                for argument in arguments:
-                                    if isinstance(argument, QualifiedNameReference):
-                                        name = argument.name
-                                        _column_name = ''
-                                        if len(name.parts) == 2:
-                                            _column_name = name.parts[1]
-                                        else:
-                                            _column_name = name.parts[0]
-
-                                        if expression.name == 'max':
-                                            self.min_max_list.append(_column_name)
-
-                                        self.projection_column_list.append(_column_name)
-
-                                    if argument == "*":
-                                        name = expression.name
-                                        if name == 'count':
-                                            self.projection_column_list.append(
-                                                'count(*)'
-                                            )
-
-                            else:
-                                name = expression.name
-                                if name == 'count':
-                                    self.projection_column_list.append('count(*)')
                     self.process(item, context)
+
+            def visit_qualified_name_reference(self, node, context):
+                if context & ParserUtils.CollectInfo.COLLECT_PROJECT_COLUMN:
+                    self.add_project_column(node.name.parts[-1])
+
+            def visit_aggregate_func(self, node, context):
+                if node.name == "count" and node.arguments[0] == "*":
+                    if context & ParserUtils.CollectInfo.COLLECT_PROJECT_COLUMN:
+                        self.add_project_column("count(*)")
+                else:
+                    for arg in node.arguments:
+                        self.process(arg, context)
+                if context & ParserUtils.CollectInfo.COLLECT_MIN_MAX_EXPRESSION_COLUMN:
+                    if node.name == 'max' or node.name == 'min':
+                        # min or max only has one argument
+                        self.min_max_list.append(node.arguments[0])
 
             def visit_sort_item(self, node, context):
                 sort_key = node.sort_key
@@ -212,9 +213,18 @@ class ParserUtils(object):
 
             def visit_query_specification(self, node, context):
                 self.limit_number = node.limit
+                context = (
+                    ParserUtils.CollectInfo.COLLECT_PROJECT_COLUMN
+                    | ParserUtils.CollectInfo.COLLECT_MIN_MAX_EXPRESSION_COLUMN
+                )
                 self.process(node.select, context)
+                context = ParserUtils.CollectInfo.COLLECT_TABLE
                 if node.from_:
                     self.process(node.from_, context)
+                context = (
+                    ParserUtils.CollectInfo.COLLECT_IN_EXPRESSION_COLUMN
+                    | ParserUtils.CollectInfo.COLLECT_FILTER_COLUMN
+                )
                 if node.where:
                     self.process(node.where, context)
                 if node.group_by:
@@ -233,6 +243,10 @@ class ParserUtils(object):
 
             def visit_update(self, node, context):
                 table_list = node.table
+                context = (
+                    ParserUtils.CollectInfo.COLLECT_TABLE
+                    | ParserUtils.CollectInfo.COLLECT_FILTER_COLUMN
+                )
                 if table_list:
                     for _table in table_list:
                         self.process(_table, context)
@@ -242,6 +256,10 @@ class ParserUtils(object):
 
             def visit_delete(self, node, context):
                 table_list = node.table
+                context = (
+                    ParserUtils.CollectInfo.COLLECT_TABLE
+                    | ParserUtils.CollectInfo.COLLECT_FILTER_COLUMN
+                )
                 if table_list:
                     for _table in table_list:
                         self.process(_table, context)
@@ -250,10 +268,13 @@ class ParserUtils(object):
                 return None
 
             def visit_between_predicate(self, node, context):
-                if isinstance(node.value, QualifiedNameReference):
-                    self.add_filter_column_with_qualified_name_reference(
-                        node.value, 'between'
-                    )
+                if (
+                    isinstance(node.value, QualifiedNameReference)
+                    and context & ParserUtils.CollectInfo.COLLECT_FILTER_COLUMN
+                ):
+                    parts = node.value.name.parts
+                    table_name = parts[-2] if len(parts) > 2 else None
+                    self.add_filter_column(parts[-1], "between", table_name)
                 return None
 
             def add_filter_column_with_qualified_name_reference(
@@ -285,7 +306,7 @@ class ParserUtils(object):
                     )
 
         visitor = FormatVisitor()
-        visitor.process(statement, None)
+        visitor.process(statement, 0)
         return visitor
 
     @staticmethod
@@ -345,7 +366,7 @@ class ParserUtils(object):
                 return None
 
         visitor = Visitor()
-        visitor.process(statement, None)
+        visitor.process(statement, 0)
         return statement
 
 
