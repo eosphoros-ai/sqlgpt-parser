@@ -250,7 +250,7 @@ delete from execution_log          where                (                       
                 result = oceanbase_parser.parse(sql)
                 assert isinstance(result, WithHasQuery)
 
-    def test_windows_func(self):
+    def test_window_func(self):
         test_sqls = [
             """
         SELECT 

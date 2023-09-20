@@ -30,7 +30,7 @@ class WindowFunc(Node):
         self.window_spec = window_spec
 
     def accept(self, visitor, context):
-        return super().accept(visitor, context)
+        return visitor.visit_window_func(self, context)
 
 
 class WindowSpec(Node):
@@ -64,9 +64,8 @@ class FrameClause(Node):
 
 
 class WindowFrame(Node):
-    def __init__(self, line=None, pos=None, type=None, start=None, end=None):
+    def __init__(self, line=None, pos=None, start=None, end=None):
         super(WindowFrame, self).__init__(line, pos)
-        self.type = type
         self.start = start
         self.end = end
 
@@ -85,7 +84,9 @@ class FrameBound(Node):
 
 
 class FrameExpr(Node):
-    def __init__(self, line=None, pos=None, value=None, unit=None):
+    def __init__(self, line=None, pos=None, value=None):
         super(FrameExpr, self).__init__(line, pos)
         self.value = value
-        self.unit = unit
+
+    def accept(self, visitor, context):
+        return visitor.visit_frame_expr(self, context)

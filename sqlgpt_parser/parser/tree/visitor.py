@@ -25,7 +25,8 @@ class AstVisitor(object):
         pass
 
     def visit_expression(self, node, context):
-        return self.visit_node(node, context)
+        for arg in node.arguments:
+            self.process(node, arg)
 
     def visit_reset_session(self, node, context):
         return self.visit_statement(node, context)
@@ -58,7 +59,7 @@ class AstVisitor(object):
         return self.visit_expression(node, context)
 
     def visit_literal(self, node, context):
-        return self.visit_expression(node, context)
+        return None
 
     def visit_double_literal(self, node, context):
         return self.visit_literal(node, context)
@@ -184,7 +185,7 @@ class AstVisitor(object):
         return self.visit_expression(node, context)
 
     def visit_qualified_name_reference(self, node, context):
-        return self.visit_expression(node, context)
+        return None
 
     def visit_dereference_expression(self, node, context):
         return self.visit_expression(node, context)
@@ -202,7 +203,7 @@ class AstVisitor(object):
         return self.visit_expression(node, context)
 
     def visit_not_expression(self, node, context):
-        return self.visit_expression(node, context)
+        return self.process(node.value, context)
 
     def visit_select_item(self, node, context):
         return self.visit_node(node, context)
@@ -217,16 +218,16 @@ class AstVisitor(object):
         return self.visit_expression(node, context)
 
     def visit_like_predicate(self, node, context):
-        return self.visit_expression(node, context)
+        return self.process(node.value, context)
 
     def visit_regexp_predicate(self, node, context):
-        return self.visit_expression(node, context)
+        return self.process(node.value, context)
 
     def visit_is_not_null_predicate(self, node, context):
-        return self.visit_expression(node, context)
+        return self.process(node.value, context)
 
     def visit_is_predicate(self, node, context):
-        return self.visit_expression(node, context)
+        return self.process(node.value, context)
 
     def visit_array_constructor(self, node, context):
         return self.visit_expression(node, context)
@@ -235,7 +236,7 @@ class AstVisitor(object):
         return self.visit_expression(node, context)
 
     def visit_long_literal(self, node, context):
-        return self.visit_literal(node, context)
+        return self.visit_literal(node.value, context)
 
     def visit_logical_binary_expression(self, node, context):
         return self.visit_expression(node, context)
@@ -300,8 +301,14 @@ class AstVisitor(object):
     def visit_input_reference(self, node, context):
         return self.visit_expression(node, context)
 
+    def visit_window_func(self, node, context):
+        for arg in node.func_args:
+            self.process(arg, context)
+        self.process(node.window_spec, context)
+        return None
+
     def visit_window_spec(self, node, context):
-        return self.visit_node(node, context)
+        return None
 
     def visit_window_frame(self, node, context):
         return self.visit_node(node, context)
