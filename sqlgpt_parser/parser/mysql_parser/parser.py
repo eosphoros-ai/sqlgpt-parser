@@ -1042,7 +1042,7 @@ def p_table_primary(p):
     r"""table_primary : aliased_relation
     | derived_table
     | LPAREN relations RPAREN"""
-    if len(p) == 3:
+    if len(p) == 4:
         p[0] = p[2]
     else:
         p[0] = p[1]
@@ -2950,6 +2950,7 @@ def p_non_reserved(p):
     | CELIING
     | CEIL
     | CEILING
+    | CHARACTER
     | CHARACTER_LENGTH
     | CHAR_LENGTH
     | COERCIBILITY
@@ -3061,12 +3062,14 @@ def p_non_reserved(p):
     | LOG
     | LOG10
     | LOG2
+    | LONG
     | LOWER
     | LPAD
     | LTRIM
     | MAKEDATE
     | MAKE_SET
     | MASTER_POS_WAIT
+    | MATCH
     | MD5
     | MID
     | MONTHNAME
@@ -3088,6 +3091,7 @@ def p_non_reserved(p):
     | POWER
     | QUOTE
     | RANDOM_BYTES
+    | RANGE
     | RANK
     | READS
     | REDOFILE
@@ -3380,6 +3384,7 @@ def p_not_keyword_token(p):
     | SERIALIZABLE
     | SESSION
     | SHARE
+    | SHOW
     | SHUTDOWN
     | SIGN
     | SIGNED

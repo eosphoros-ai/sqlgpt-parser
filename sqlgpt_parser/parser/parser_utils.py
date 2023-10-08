@@ -218,9 +218,16 @@ class ParserUtils(object):
                     | ParserUtils.CollectInfo.COLLECT_MIN_MAX_EXPRESSION_COLUMN
                 )
                 self.process(node.select, context)
-                context = ParserUtils.CollectInfo.COLLECT_TABLE
+                context = (
+                    ParserUtils.CollectInfo.COLLECT_TABLE
+                    | ParserUtils.CollectInfo.COLLECT_FILTER_COLUMN
+                )
                 if node.from_:
-                    self.process(node.from_, context)
+                    if isinstance(node.from_, list):
+                        for item in node.from_:
+                            self.process(item, context)
+                    else:
+                        self.process(node.from_, context)
                 context = (
                     ParserUtils.CollectInfo.COLLECT_IN_EXPRESSION_COLUMN
                     | ParserUtils.CollectInfo.COLLECT_FILTER_COLUMN
