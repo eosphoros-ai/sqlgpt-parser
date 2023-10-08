@@ -164,7 +164,9 @@ class AstVisitor(object):
         return self.visit_expression(node, context)
 
     def visit_sub_string(self, node, context):
-        return self.visit_expression(node, context)
+        for argument in node.arguments:
+            self.process(argument, context)
+        return None
 
     def visit_lambda_expression(self, node, context):
         return self.visit_expression(node, context)
@@ -411,19 +413,21 @@ class DefaultTraversalVisitor(AstVisitor):
         return self.process(node.expression, context)
 
     def visit_time_interval(self, node, context):
-        return self.visit_expression(node, context)
+        return self.process(node.value, context)
 
     def visit_convert(self, node, context):
-        return self.visit_expression(node, context)
+        return self.process(node.expr, context)
 
     def visit_trim_func(self, node, context):
-        return self.visit_expression(node, context)
+        return self.process(node.arg, context)
 
     def visit_binary(self, node, context):
-        return self.visit_expression(node, context)
+        return self.process(node.expr, context)
 
     def visit_member_of(self, node, context):
-        return self.visit_expression(node, context)
+        self.process(node.value, context)
+        self.process(node.json_value, context)
+        return None
 
     def visit_group_concat(self, node, context):
         return self.visit_expression(node, context)
@@ -607,7 +611,12 @@ class DefaultTraversalVisitor(AstVisitor):
     def visit_query_specification(self, node, context):
         self.process(node.select, context)
         if node.from_:
-            self.process(node.from_, context)
+            if node.from_:
+                if isinstance(node.from_, list):
+                    for item in node.from_:
+                        self.process(item, context)
+                else:
+                    self.process(node.from_, context)
         if node.where:
             self.process(node.where, context)
         if node.group_by:
@@ -670,7 +679,8 @@ class DefaultTraversalVisitor(AstVisitor):
         if isinstance(node.criteria, JoinOn):
             self.process(node.criteria.expression, context)
         elif isinstance(node.criteria, JoinUsing):
-            self.process(node.criteria.columns)
+            for column in node.criteria.columns:
+                self.process(column)
 
         return None
 

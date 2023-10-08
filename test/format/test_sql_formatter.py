@@ -248,9 +248,8 @@ FROM
         for index, sql in enumerate(test_sqls):
             statement = parser.parse(sql)
             visitor = ParserUtils.format_statement(statement)
-            print(visitor)
-            visitor.table_list = except_table_list[index]
-            visitor.projection_column_list = except_projection_list[index]
+            assert visitor.table_list == except_table_list[index]
+            assert visitor.projection_column_list == except_projection_list[index]
 
 
 if __name__ == '__main__':

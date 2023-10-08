@@ -1041,7 +1041,7 @@ def p_table_primary(p):
     r"""table_primary : aliased_relation
     | derived_table
     | LPAREN relations RPAREN"""
-    if len(p) == 3:
+    if len(p) == 4:
         p[0] = p[2]
     else:
         p[0] = p[1]
@@ -3082,6 +3082,7 @@ def p_non_reserved(p):
     | CEILING
     | CHAIN
     | CHANGED
+    | CHARACTER
     | CHARACTER_LENGT
     | CHARACTER_LENGTH
     | CHARSET
@@ -3393,6 +3394,7 @@ def p_non_reserved(p):
     | LOGFILE
     | LOGONLY_REPLICA_NUM
     | LOGS
+    | LONG
     | LONGB
     | LOOP
     | LOWER
@@ -3427,6 +3429,7 @@ def p_non_reserved(p):
     | MASTER_SSL_KEY
     | MASTER_SSL_VERIFY_SERVER_CERT
     | MASTER_USER
+    | MATCH
     | MATCHED
     | MATERIALIZED
     | MAX
@@ -3575,6 +3578,7 @@ def p_non_reserved(p):
     | R32
     | RANDOM
     | RANDOM_BYTES
+    | RANGE
     | RANK
     | READS
     | READ_ONLY
@@ -3675,6 +3679,7 @@ def p_non_reserved(p):
     | SHA1
     | SHA2
     | SHARE
+    | SHOW
     | SHUTDOWN
     | SKIP
     | SIGN
