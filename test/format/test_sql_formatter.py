@@ -218,6 +218,12 @@ FROM
 
     def test_sql(self):
         test_sqls = [
+            """
+            SELECT T1.id 
+FROM
+    (SELECT T2.id
+     FROM (SELECT T3.id FROM table1 AS T3) AS T2) AS T1 
+           """,
             "update sqless_base set nick=1231 where a = 1 and b = 2 ",
             "select 1,t2.a from t1 left join t2 where t1.d > 2 and t2.a =1",
         ]
@@ -248,6 +254,8 @@ FROM
         for index, sql in enumerate(test_sqls):
             statement = parser.parse(sql)
             visitor = ParserUtils.format_statement(statement)
+            columns = visitor.columns
+            print(columns)
             assert visitor.table_list == except_table_list[index]
             assert visitor.projection_column_list == except_projection_list[index]
 

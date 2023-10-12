@@ -2238,7 +2238,7 @@ def p_string_operator_func_call(p):
         if length > 4:
             for i in range(3, length, 2):
                 arguments.append(p[i])
-            arguments.extend(call_list)
+        arguments.extend(call_list)
         p[0] = FunctionCall(p.lineno(1), p.lexpos(1), name=p[1], arguments=arguments)
 
 

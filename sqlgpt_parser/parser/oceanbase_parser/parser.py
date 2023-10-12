@@ -411,12 +411,6 @@ def p_table_name_opt_wild(p):
         p[0] = QualifiedName(parts=[p[1]])
 
 
-def p_opt_asterisk(p):
-    r"""opt_asterisk : PERIOD ASTERISK
-    | empty"""
-    pass
-
-
 def p_update(p):
     r"""update : UPDATE relations SET assignment_list where_opt order_by_opt limit_opt"""
     p_limit = p[7]
@@ -1649,7 +1643,7 @@ def p_window_func_call(p):
     | ROW_NUMBER LPAREN RPAREN over_clause
     """
     length = len(p)
-    window_spec = p[length-1]
+    window_spec = p[length - 1]
     args = []
     ignore_null = None
 
@@ -1804,6 +1798,7 @@ def p_frame_end(p):
 def p_frame_between(p):
     r"""frame_between : BETWEEN frame_start AND frame_end"""
     p[0] = WindowFrame(p.lineno(1), p.lexpos(1), start=p[2], end=p[4])
+
 
 def p_frame_expr(p):
     r"""frame_expr : figure
@@ -2231,7 +2226,7 @@ def p_string_operator_func_call(p):
         if length > 4:
             for i in range(3, length, 2):
                 arguments.append(p[i])
-            arguments.extend(call_list)
+        arguments.extend(call_list)
         p[0] = FunctionCall(p.lineno(1), p.lexpos(1), name=p[1], arguments=arguments)
 
 
@@ -2562,6 +2557,7 @@ def p_json_table_column(p):
             p[0] = JsonTableColumn(p.lineno(1), p.lexpos(1),
                                    column_type=JsonTableColumn.ColumnType.NESTED,
                                    path=p[3], column_list=p[6])
+
 
 def p_on_empty_or_error_opt(p):
     r"""on_empty_or_error_opt : json_table_value_opt ON EMPTY
@@ -2973,6 +2969,7 @@ def p_boolean_value(p):
     | FALSE"""
     p[0] = BooleanLiteral(p.lineno(1), p.lexpos(1), value=p[1])
 
+
 def p_qualified_name_list(p):
     r"""qualified_name_list : qualified_name_list COMMA qualified_name
     | qualified_name"""
@@ -2981,6 +2978,7 @@ def p_qualified_name_list(p):
     else:
         p[1].append(p[3])
         p[0] = p[1]
+
 
 def p_qualified_name(p):
     r"""qualified_name : identifier
