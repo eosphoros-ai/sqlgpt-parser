@@ -553,7 +553,7 @@ def p_set_operation_stmt(p):
         p[0] = WithHasQuery(p.lineno(1), p.lexpos(1), with_list=p[1], query=p[2])
 
 
-def p_set_operation_stmt_w_order_by_limit(p):
+def p_set_operation_stmt_wout_order_limit(p):
     r"""set_operation_stmt_wout_order_limit : set_operation_stmt_subquery
     |  set_operation_stmt_simple_table
     """
@@ -3984,10 +3984,20 @@ def p_error(p):
 parser = None
 
 
+import pickle
+import pickletools
+from pathlib import Path
+
+parser :yacc.LRParser = None
+
 def parse(sql=None, debug=False, tracking=False, tokenfunc=None):
+    parser_cache = Path(__file__).absolute().parent / "parser.tmp.out"
     global parser
-    if parser == None:
+    if parser is None:
         with threading.Lock():
-            if parser == None:
+            if parser_cache.exists():
+                parser = pickle.loads(parser_cache.read_bytes())
+            else :
                 parser = yacc.yacc(tabmodule="parser_table", start="command", debugfile="parser.out", optimize=True)
+                parser_cache.write_bytes(pickletools.optimize(pickle.dumps(parser, protocol=5)))
     return parser.parse(input=sql, lexer=lexer, debug=debug, tracking=tracking, tokenfunc=tokenfunc)

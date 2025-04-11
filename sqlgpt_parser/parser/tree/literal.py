@@ -16,8 +16,9 @@ from .node import Node
 
 
 class Literal(Node):
-    def __init__(self, line=None, pos=None):
+    def __init__(self, line, pos, value):
         super(Literal, self).__init__(line, pos)
+        self.value = value
 
 
 class IntervalLiteral(Literal):
@@ -30,7 +31,7 @@ class IntervalLiteral(Literal):
         start_field=None,
         end_field=None,
     ):
-        super(IntervalLiteral, self).__init__(line, pos)
+        super(IntervalLiteral, self).__init__(line, pos, value)
         self.value = value
         self.sign = sign
         self.start_field = start_field
@@ -42,7 +43,7 @@ class IntervalLiteral(Literal):
 
 class TimestampLiteral(Literal):
     def __init__(self, line=None, pos=None, value=None):
-        super(TimestampLiteral, self).__init__(line, pos)
+        super(TimestampLiteral, self).__init__(line, pos, value)
         self.value = value
 
     def accept(self, visitor, context):
@@ -51,7 +52,7 @@ class TimestampLiteral(Literal):
 
 class NullLiteral(Literal):
     def __init__(self, line=None, pos=None):
-        super(NullLiteral, self).__init__(line, pos)
+        super(NullLiteral, self).__init__(line, pos, None)
 
     def accept(self, visitor, context):
         return visitor.visit_null_literal(self, context)
@@ -59,8 +60,8 @@ class NullLiteral(Literal):
 
 class DoubleLiteral(Literal):
     def __init__(self, line=None, pos=None, value=None):
-        super(DoubleLiteral, self).__init__(line, pos)
         self.value = float(value)
+        super(DoubleLiteral, self).__init__(line, pos, self.value)
 
     def accept(self, visitor, context):
         return visitor.visit_double_literal(self, context)
@@ -68,7 +69,7 @@ class DoubleLiteral(Literal):
 
 class StringLiteral(Literal):
     def __init__(self, line=None, pos=None, value=None):
-        super(StringLiteral, self).__init__(line, pos)
+        super(StringLiteral, self).__init__(line, pos, value)
         self.value = value
 
     def accept(self, visitor, context):
@@ -77,7 +78,7 @@ class StringLiteral(Literal):
 
 class TimeLiteral(Literal):
     def __init__(self, line=None, pos=None, value=None, unit=None):
-        super(TimeLiteral, self).__init__(line, pos)
+        super(TimeLiteral, self).__init__(line, pos, value)
         self.value = value
         self.unit = unit
 
@@ -90,7 +91,7 @@ class TimeLiteral(Literal):
 
 class DateLiteral(Literal):
     def __init__(self, line=None, pos=None, value=None, unit=None):
-        super(DateLiteral, self).__init__(line, pos)
+        super(DateLiteral, self).__init__(line, pos, value)
         self.value = value
         self.unit = unit
 
@@ -115,8 +116,8 @@ def convert_to_decimal(text):
 
 class LongLiteral(Literal):
     def __init__(self, line=None, pos=None, value=None):
-        super(LongLiteral, self).__init__(line, pos)
         self.value = convert_to_decimal(value)
+        super(LongLiteral, self).__init__(line, pos, value)
         self.orgin = value
 
     def accept(self, visitor, context):
@@ -131,8 +132,8 @@ class BooleanLiteral(Literal):
     FALSE_LITERAL = None
 
     def __init__(self, line=None, pos=None, value=None):
-        super(BooleanLiteral, self).__init__(line, pos)
         self.value = value.lower() == "true"
+        super(BooleanLiteral, self).__init__(line, pos, self.value)
 
     def accept(self, visitor, context):
         return visitor.visit_boolean_literal(self, context)
@@ -144,7 +145,7 @@ BooleanLiteral.FALSE_LITERAL = BooleanLiteral(value="FALSE")
 
 class DefaultLiteral(Literal):
     def __init__(self, line=None, pos=None, value=None):
-        super(DefaultLiteral, self).__init__(line, pos)
+        super(DefaultLiteral, self).__init__(line, pos, value)
         self.value = value
 
     def accept(self, visitor, context):
@@ -153,7 +154,7 @@ class DefaultLiteral(Literal):
 
 class ErrorLiteral(Literal):
     def __int__(self, line=None, pos=None):
-        super(ErrorLiteral, self).__init__(line, pos)
+        super(ErrorLiteral, self).__init__(line, pos, None)
 
     def accept(self, visitor, context):
         return visitor.visit_error_literal(self, context)

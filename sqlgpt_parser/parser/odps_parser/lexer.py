@@ -17,43 +17,43 @@ from sqlgpt_parser.parser.odps_parser.reserved import reserved, nonreserved
 
 tokens = (
     [
-        'IDENTIFIER',
-        'DIGIT_IDENTIFIER',
-        'QUOTED_IDENTIFIER',
-        'BACKQUOTED_IDENTIFIER',
-        'PERIOD',
-        'COMMA',
-        'PLUS',
-        'MINUS',
-        'LPAREN',
-        'RPAREN',
-        'ANDAND',
-        'ASSIGNMENTEQ',
-        'GT',
-        'GE',
-        'LT',
-        'LE',
-        'EQ',
-        'NULL_SAFE_EQ',
-        'NE',
-        'BIT_OR',
-        'BIT_AND',
-        'BIT_XOR',
-        'BIT_OPPOSITE',
-        'SINGLE_AT_IDENTIFIER',
-        'DOUBLE_AT_IDENTIFIER',
-        'EXCLA_MARK',
-        'BIT_MOVE_LEFT',
-        'BIT_MOVE_RIGHT',
-        'PIPES',
-        'SLASH',
-        'ASTERISK',
-        'QM',
-        'SCONST',
-        'PERCENT',
-        'FRACTION',
-        'NUMBER',
-        'HEX_NUMBER',
+        "IDENTIFIER",
+        "DIGIT_IDENTIFIER",
+        "QUOTED_IDENTIFIER",
+        "BACKQUOTED_IDENTIFIER",
+        "PERIOD",
+        "COMMA",
+        "PLUS",
+        "MINUS",
+        "LPAREN",
+        "RPAREN",
+        "ANDAND",
+        "ASSIGNMENTEQ",
+        "GT",
+        "GE",
+        "LT",
+        "LE",
+        "EQ",
+        "NULL_SAFE_EQ",
+        "NE",
+        "BIT_OR",
+        "BIT_AND",
+        "BIT_XOR",
+        "BIT_OPPOSITE",
+        "SINGLE_AT_IDENTIFIER",
+        "DOUBLE_AT_IDENTIFIER",
+        "EXCLA_MARK",
+        "BIT_MOVE_LEFT",
+        "BIT_MOVE_RIGHT",
+        "PIPES",
+        "SLASH",
+        "ASTERISK",
+        "QM",
+        "SCONST",
+        "PERCENT",
+        "FRACTION",
+        "NUMBER",
+        "HEX_NUMBER",
     ]
     + list(reserved)
     + list(nonreserved)
@@ -61,43 +61,43 @@ tokens = (
 
 sql_tokens = list(reserved) + list(nonreserved)
 
-t_LPAREN = r'\('
-t_RPAREN = r'\)'
+t_LPAREN = r"\("
+t_RPAREN = r"\)"
 
-t_ASSIGNMENTEQ = r':='
-t_EQ = r'='
-t_NE = r'<>|!='
-t_LT = r'<'
-t_LE = r'<='
-t_GT = r'>'
-t_GE = r'>='
-t_NULL_SAFE_EQ = r'<=>'
-t_PERIOD = r'\.'
-t_COMMA = r','
-t_PLUS = r'\+'
-t_MINUS = r'-'
-t_ASTERISK = r'\*'
-t_SLASH = r'/'
-t_PERCENT = r'%'
-t_QM = r'\?'
+t_ASSIGNMENTEQ = r":="
+t_EQ = r"="
+t_NE = r"<>|!="
+t_LT = r"<"
+t_LE = r"<="
+t_GT = r">"
+t_GE = r">="
+t_NULL_SAFE_EQ = r"<=>"
+t_PERIOD = r"\."
+t_COMMA = r","
+t_PLUS = r"\+"
+t_MINUS = r"-"
+t_ASTERISK = r"\*"
+t_SLASH = r"/"
+t_PERCENT = r"%"
+t_QM = r"\?"
 
-t_PIPES = r'\|\|'
+t_PIPES = r"\|\|"
 
-t_ignore = ' \t'
+t_ignore = " \t"
 
-t_ANDAND = r'\&\&'
-t_BIT_OR = r'\|'
-t_BIT_AND = r'\&'
-t_BIT_XOR = r'\^'
-t_BIT_OPPOSITE = r'\~'
-t_BIT_MOVE_LEFT = r'<<'
-t_BIT_MOVE_RIGHT = r'>>'
-t_EXCLA_MARK = r'!'
+t_ANDAND = r"\&\&"
+t_BIT_OR = r"\|"
+t_BIT_AND = r"\&"
+t_BIT_XOR = r"\^"
+t_BIT_OPPOSITE = r"\~"
+t_BIT_MOVE_LEFT = r"<<"
+t_BIT_MOVE_RIGHT = r">>"
+t_EXCLA_MARK = r"!"
 
 
 def t_DOUBLE(t):
     r"[0-9]*\.[0-9]+([eE][-+]?[0-9]+)?|[-+]?[0-9]+([eE][-+]?[0-9]+)"
-    if 'e' in t.value or 'E' in t.value or '.' in t.value:
+    if "e" in t.value or "E" in t.value or "." in t.value:
         t.type = "FRACTION"
     else:
         t.type = "NUMBER"
@@ -121,7 +121,7 @@ def t_NUMBER_START_WITH_XB(t):
 def t_IDENTIFIER(t):
     r"""[a-zA-Z\u4e00-\u9fa50-9_$][a-zA-Z\u4e00-\u9fa50-9_@:$]*"""
     if re.match(
-        r'(^0[xX][0-9a-fA-F]+$)|(^0[bB][01]+$)|(^\d+$)',
+        r"(^0[xX][0-9a-fA-F]+$)|(^0[bB][01]+$)|(^\d+$)",
         t.value,
     ):
         t.type = "NUMBER"
@@ -153,7 +153,7 @@ def t_DOUBLE_AT_IDENTIFIER(t):
 
 
 def t_BACKQUOTED_IDENTIFIER(t):
-    r'`([^`]|``)*`'
+    r"""`([^`]|``)*`"""
     val = t.value.lower()
     if val in tokens:
         t.type = tokens[val]
@@ -161,7 +161,7 @@ def t_BACKQUOTED_IDENTIFIER(t):
 
 
 def t_newline(t):
-    r'[\r\n]+'
+    r"[\r\n]+"
     t.lexer.lineno += t.value.count("\n")
 
 
@@ -171,7 +171,12 @@ def t_error(t):
 
 
 def t_COMMENT(t):
-    r'(\/\*\*\/)|(/\*((?!\/\*).)+\*/)'
+    r"""(\/\*\*\/)|(/\*((?!\/\*).)+\*/)"""
+    pass
+
+
+def t_SEMICOLON(t):
+    r""";"""
     pass
 
 
