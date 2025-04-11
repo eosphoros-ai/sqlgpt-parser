@@ -2238,7 +2238,7 @@ def p_string_operator_func_call(p):
         if length > 4:
             for i in range(3, length, 2):
                 arguments.append(p[i])
-            arguments.extend(call_list)
+        arguments.extend(call_list)
         p[0] = FunctionCall(p.lineno(1), p.lexpos(1), name=p[1], arguments=arguments)
 
 
@@ -3990,13 +3990,20 @@ def p_error(p):
     raise SyntaxError("The current version does not support this SQL")
 
 
-parser = None
+import pickle
+import pickletools
+from pathlib import Path
 
+parser :yacc.LRParser = None
 
 def parse(sql=None, debug=False, tracking=False, tokenfunc=None):
+    parser_cache = Path(__file__).absolute().parent / "parser.tmp.out"
     global parser
-    if parser == None:
+    if parser is None:
         with threading.Lock():
-            if parser == None:
+            if parser_cache.exists():
+                parser = pickle.loads(parser_cache.read_bytes())
+            else :
                 parser = yacc.yacc(tabmodule="parser_table", start="command", debugfile="parser.out", optimize=True)
+                parser_cache.write_bytes(pickletools.optimize(pickle.dumps(parser, protocol=5)))
     return parser.parse(input=sql, lexer=lexer, debug=debug, tracking=tracking, tokenfunc=tokenfunc)

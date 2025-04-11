@@ -90,6 +90,9 @@ from sqlgpt_parser.parser.tree.field_type import UNSPECIFIEDLENGTH, FieldType, S
 
 from ply import yacc
 from sqlgpt_parser.parser.mysql_parser.lexer import tokens, lexer
+import pickle
+import pickletools
+from pathlib import Path
 
 tokens = tokens
 
@@ -3559,13 +3562,16 @@ def p_error(p):
     raise SyntaxError("The current version does not support this SQL")
 
 
-parser = None
-
+parser :yacc.LRParser = None
 
 def parse(sql=None, debug=False, tracking=False, tokenfunc=None):
+    parser_cache = Path(__file__).absolute().parent / "parser.tmp.out"
     global parser
     if parser is None:
         with threading.Lock():
-            if parser is None:
+            if parser_cache.exists():
+                parser = pickle.loads(parser_cache.read_bytes())
+            else :
                 parser = yacc.yacc(tabmodule="parser_table", start="command", debugfile="parser.out", optimize=True)
+                parser_cache.write_bytes(pickletools.optimize(pickle.dumps(parser, protocol=5)))
     return parser.parse(input=sql, lexer=lexer, debug=debug, tracking=tracking, tokenfunc=tokenfunc)

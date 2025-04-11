@@ -146,7 +146,8 @@ class AstVisitor(object):
         return self.visit_literal(node, context)
 
     def visit_when_clause(self, node, context):
-        return self.visit_expression(node, context)
+        self.process(node.operand, context)
+        self.process(node.result, context)
 
     def visit_interval_literal(self, node, context):
         return self.visit_literal(node, context)
@@ -298,7 +299,11 @@ class AstVisitor(object):
         return self.visit_expression(node, context)
 
     def visit_group_concat(self, node, context):
-        return self.visit_expression(node, context)
+        self.process(node.distinct, context)
+        for arg in node.args:
+            self.process(arg, context)
+        self.process(node.order_by, context)
+        self.process(node.over_clause, context)
 
     def visit_input_reference(self, node, context):
         return self.visit_expression(node, context)
@@ -430,7 +435,15 @@ class DefaultTraversalVisitor(AstVisitor):
         return None
 
     def visit_group_concat(self, node, context):
-        return self.visit_expression(node, context)
+        if node.distinct is not None:
+            self.process(node.distinct, context)
+        for arg in node.args:
+            self.process(arg, context)
+        if node.order_by is not None:
+            for item in node.order_by:
+                self.process(node.order_by, context)
+        if node.over_clause is not None:
+            self.process(node.over_clause, context)
 
     def visit_arithmetic_binary(self, node, context):
         self.process(node.left, context)
@@ -536,8 +549,11 @@ class DefaultTraversalVisitor(AstVisitor):
     def visit_simple_case_expression(self, node, context):
         if node.operand != None:
             self.process(node.operand, context)
-        for clause in node.when_clauses:
-            self.process(clause, context)
+        if isinstance(node.when_clauses, list):
+            for clause in node.when_clauses:
+                self.process(clause, context)
+        else:
+            self.process(node.when_clauses, context)
         if node.default_value:
             self.process(node.default_value, context)
         return None
@@ -611,12 +627,11 @@ class DefaultTraversalVisitor(AstVisitor):
     def visit_query_specification(self, node, context):
         self.process(node.select, context)
         if node.from_:
-            if node.from_:
-                if isinstance(node.from_, list):
-                    for item in node.from_:
-                        self.process(item, context)
-                else:
-                    self.process(node.from_, context)
+            if isinstance(node.from_, list):
+                for item in node.from_:
+                    self.process(item, context)
+            else:
+                self.process(node.from_, context)
         if node.where:
             self.process(node.where, context)
         if node.group_by:
